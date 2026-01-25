@@ -1,0 +1,6 @@
+packages:
+  # 所有模块都放在 packages 目录下
+  - "packages/*"
+  # 可选：如果有公共配置/工具，可单独抽离
+  - "configs/*"
+  - "scripts/*"
