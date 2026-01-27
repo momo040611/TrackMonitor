@@ -8,18 +8,6 @@ importers:
 
   .:
     devDependencies:
-      '@eslint/js':
-        specifier: ^9.18.0
-        version: 9.39.2
-      '@typescript-eslint/eslint-plugin':
-        specifier: ^8.20.0
-        version: 8.54.0(@typescript-eslint/parser@8.54.0(eslint@9.39.2)(typescript@5.9.3))(eslint@9.39.2)(typescript@5.9.3)
-      eslint:
-        specifier: ^9.18.0
-        version: 9.39.2
-      eslint-plugin-prettier:
-        specifier: ^5.2.2
-        version: 5.5.5(@types/eslint@9.6.1)(eslint-config-prettier@10.1.8(eslint@9.39.2))(eslint@9.39.2)(prettier@3.8.1)
       husky:
         specifier: ^9.1.7
         version: 9.1.7
@@ -29,12 +17,6 @@ importers:
       prettier:
         specifier: ^3.4.2
         version: 3.8.1
-      typescript:
-        specifier: ^5.7.3
-        version: 5.9.3
-      typescript-eslint:
-        specifier: ^8.20.0
-        version: 8.54.0(eslint@9.39.2)(typescript@5.9.3)
 
   packages/track-sdk:
     dependencies:
@@ -109,6 +91,9 @@ importers:
       '@types/supertest':
         specifier: ^6.0.2
         version: 6.0.3
+      eslint-plugin-prettier:
+        specifier: ^5.2.2
+        version: 5.5.5(@types/eslint@9.6.1)(eslint@9.39.2)(prettier@3.8.1)
       globals:
         specifier: ^16.0.0
         version: 16.5.0
@@ -133,6 +118,12 @@ importers:
       tsconfig-paths:
         specifier: ^4.2.0
         version: 4.2.0
+      typescript:
+        specifier: ^5.7.3
+        version: 5.9.3
+      typescript-eslint:
+        specifier: ^8.20.0
+        version: 8.54.0(eslint@9.39.2)(typescript@5.9.3)
 
   packages/track-view:
     dependencies:
@@ -2045,12 +2036,6 @@ packages:
   escape-string-regexp@4.0.0:
     resolution: {integrity: sha512-TtpcNJ3XAzx3Gq8sWRzJaVajRs0uVxA2YAkdb1jm2YkPz4G6egUFAyA3n5vtEIZefPk5Wa4UXbKuS5fKkJWdgA==}
     engines: {node: '>=10'}
-
-  eslint-config-prettier@10.1.8:
-    resolution: {integrity: sha512-82GZUjRS0p/jganf6q1rEO25VSoHH0hKPCTrgillPjdI/3bgBhAE1QzHrHTizjpRvy6pGAvKjDJtk2pF9NDq8w==}
-    hasBin: true
-    peerDependencies:
-      eslint: '>=7.0.0'
 
   eslint-plugin-prettier@5.5.5:
     resolution: {integrity: sha512-hscXkbqUZ2sPithAuLm5MXL+Wph+U7wHngPBv9OMWwlP8iaflyxpjTYZkmdgB4/vPIhemRlBEoLrH7UC1n7aUw==}
@@ -5783,12 +5768,7 @@ snapshots:
 
   escape-string-regexp@4.0.0: {}
 
-  eslint-config-prettier@10.1.8(eslint@9.39.2):
-    dependencies:
-      eslint: 9.39.2
-    optional: true
-
-  eslint-plugin-prettier@5.5.5(@types/eslint@9.6.1)(eslint-config-prettier@10.1.8(eslint@9.39.2))(eslint@9.39.2)(prettier@3.8.1):
+  eslint-plugin-prettier@5.5.5(@types/eslint@9.6.1)(eslint@9.39.2)(prettier@3.8.1):
     dependencies:
       eslint: 9.39.2
       prettier: 3.8.1
@@ -5796,7 +5776,6 @@ snapshots:
       synckit: 0.11.12
     optionalDependencies:
       '@types/eslint': 9.6.1
-      eslint-config-prettier: 10.1.8(eslint@9.39.2)
 
   eslint-plugin-react-hooks@7.0.1(eslint@9.39.2):
     dependencies:

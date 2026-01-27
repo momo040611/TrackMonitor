@@ -4,8 +4,6 @@
   "description": "一体化前端埋点监控平台",
   "main": "index.js",
   "scripts": {
-    "lint": "eslint .",
-    "lint:fix": "eslint . --fix",
     "format": "prettier --write \"**/*.{js,ts,tsx,jsx,json,md}\"",
     "format:check": "prettier --check \"**/*.{js,ts,tsx,jsx,json,md}\"",
     "prepare": "husky"
@@ -15,22 +13,12 @@
   "license": "ISC",
   "packageManager": "pnpm@10.26.0",
   "devDependencies": {
-    "eslint": "^9.18.0",
-    "eslint-plugin-prettier": "^5.2.2",
     "prettier": "^3.4.2",
-    "@typescript-eslint/eslint-plugin": "^8.20.0",
-    "typescript": "^5.7.3",
-    "typescript-eslint": "^8.20.0",
     "husky": "^9.1.7",
-    "lint-staged": "^15.2.11",
-    "@eslint/js": "^9.18.0"
+    "lint-staged": "^15.2.11"
   },
   "lint-staged": {
-    "*.{js,ts,tsx,jsx}": [
-      "eslint --fix",
-      "prettier --write"
-    ],
-    "*.{json,md}": [
+    "*.{js,ts,tsx,jsx,json,md}": [
       "prettier --write"
     ]
   }
