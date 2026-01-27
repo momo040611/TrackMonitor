@@ -1,4 +1,4 @@
-import React from 'react';
+import React from 'react'
 
 const SmartHall: React.FC = () => {
   return (
@@ -10,7 +10,7 @@ const SmartHall: React.FC = () => {
         </p>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default SmartHall;
+export default SmartHall

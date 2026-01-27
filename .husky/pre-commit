@@ -1,0 +1,2 @@
+# 执行git commit时会自动检查所有缓存文件 运行eslint --fix和prettier --write
+pnpm exec lint-staged

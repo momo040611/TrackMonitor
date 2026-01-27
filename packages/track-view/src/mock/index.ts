@@ -4,48 +4,48 @@
 export const userData = {
   username: 'admin',
   password: '123456',
-  token: 'mock-token'
-};
+  token: 'mock-token',
+}
 
 // 基础数据概览
 export const overviewData = {
   activeUsers: 1234,
   totalEvents: 56789,
   successRate: 99.9,
-  errorRate: 0.1
-};
+  errorRate: 0.1,
+}
 
 // 用户行为路径
 export const userPathData = [
   {
     id: 1,
     action: '应用启动',
-    time: '2026-01-27 10:00:00'
+    time: '2026-01-27 10:00:00',
   },
   {
     id: 2,
     action: '进入首页',
-    time: '2026-01-27 10:00:05'
+    time: '2026-01-27 10:00:05',
   },
   {
     id: 3,
     action: '点击按钮',
-    time: '2026-01-27 10:00:10'
+    time: '2026-01-27 10:00:10',
   },
   {
     id: 4,
     action: '离开页面',
-    time: '2026-01-27 10:00:15'
-  }
-];
+    time: '2026-01-27 10:00:15',
+  },
+]
 
 // 用户画像
 export const userProfileData = {
   deviceType: '移动设备',
   os: 'iOS 17.0',
   browser: 'Safari 17.0',
-  region: '中国'
-};
+  region: '中国',
+}
 
 // 智能大厅功能模块
 export const smartHallModules = [
@@ -56,7 +56,7 @@ export const smartHallModules = [
     icon: '📊',
     color: '#1890ff',
     bgColor: '#f0f9ff',
-    borderColor: '#e6f7ff'
+    borderColor: '#e6f7ff',
   },
   {
     id: 2,
@@ -65,7 +65,7 @@ export const smartHallModules = [
     icon: '🚨',
     color: '#52c41a',
     bgColor: '#f6ffed',
-    borderColor: '#d9f7be'
+    borderColor: '#d9f7be',
   },
   {
     id: 3,
@@ -74,7 +74,7 @@ export const smartHallModules = [
     icon: '📈',
     color: '#fa8c16',
     bgColor: '#fff7e6',
-    borderColor: '#ffe7ba'
+    borderColor: '#ffe7ba',
   },
   {
     id: 4,
@@ -83,9 +83,9 @@ export const smartHallModules = [
     icon: '🔍',
     color: '#f5222d',
     bgColor: '#fff0f0',
-    borderColor: '#ffccc7'
-  }
-];
+    borderColor: '#ffccc7',
+  },
+]
 
 // 数据分析图表数据
 export const analysisData = {
@@ -96,13 +96,13 @@ export const analysisData = {
     { date: '2026-01-24', value: 1500 },
     { date: '2026-01-25', value: 1300 },
     { date: '2026-01-26', value: 1800 },
-    { date: '2026-01-27', value: 1234 }
+    { date: '2026-01-27', value: 1234 },
   ],
   performance: [
     { name: '启动时间', value: 150 },
     { name: '响应时间', value: 80 },
     { name: '上报时间', value: 50 },
-    { name: '处理时间', value: 30 }
+    { name: '处理时间', value: 30 },
   ],
   errorRate: [
     { date: '2026-01-21', value: 0.2 },
@@ -111,13 +111,13 @@ export const analysisData = {
     { date: '2026-01-24', value: 0.08 },
     { date: '2026-01-25', value: 0.12 },
     { date: '2026-01-26', value: 0.09 },
-    { date: '2026-01-27', value: 0.1 }
-  ]
-};
+    { date: '2026-01-27', value: 0.1 },
+  ],
+}
 
 // SDK设置选项
 export const sdkSettings = {
   sampleRate: 100,
   reportInterval: 10000,
-  debugMode: false
-};
+  debugMode: false,
+}

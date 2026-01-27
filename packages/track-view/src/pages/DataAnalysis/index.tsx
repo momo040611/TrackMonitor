@@ -1,4 +1,4 @@
-import React from 'react';
+import React from 'react'
 
 const DataAnalysis: React.FC = () => {
   return (
@@ -10,7 +10,7 @@ const DataAnalysis: React.FC = () => {
         </p>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default DataAnalysis;
+export default DataAnalysis
