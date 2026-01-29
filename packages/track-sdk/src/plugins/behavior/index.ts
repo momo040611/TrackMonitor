@@ -9,6 +9,7 @@ export function createBehaviorPlugin(_options: BehaviorPluginOptions = {}): Trac
         name: "behavior",
         setup() {
             // 初始化行为采集，比如绑定全局事件监听等
+
         },
         onEvent() {
             // 行为事件处理入口
