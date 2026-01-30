@@ -1,0 +1,81 @@
+.tracking-copilot-container {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+  /* 左侧输入卡片 */
+  /* 右侧代码预览卡片 (暗色模式) */
+}
+.tracking-copilot-container .input-card {
+  flex: 1;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+.tracking-copilot-container .input-card .instruction-text {
+  display: block;
+  margin-bottom: 12px;
+}
+.tracking-copilot-container .input-card .requirement-input {
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+.tracking-copilot-container .input-card .tags-wrapper {
+  margin-bottom: 20px;
+}
+.tracking-copilot-container .input-card .suggestion-tag {
+  cursor: pointer;
+  border-radius: 4px;
+}
+.tracking-copilot-container .input-card .generate-btn {
+  border-radius: 8px;
+  height: 45px;
+}
+.tracking-copilot-container .preview-card {
+  flex: 1.2;
+  border-radius: 12px;
+  background: #0d1117;
+  border: none;
+  /* 覆盖 AntD Card 标题颜色 */
+  /* 加载中状态 */
+  /* 代码块样式 */
+  /* 空状态样式 */
+}
+.tracking-copilot-container .preview-card .ant-card-head {
+  border-bottom: 1px solid #30363d;
+}
+.tracking-copilot-container .preview-card .ant-card-head .ant-card-head-title {
+  color: #e6edf3;
+}
+.tracking-copilot-container .preview-card .copy-btn {
+  color: #58a6ff;
+}
+.tracking-copilot-container .preview-card .copy-btn:hover {
+  color: #79c0ff;
+}
+.tracking-copilot-container .preview-card .code-viewport {
+  min-height: 300px;
+  position: relative;
+}
+.tracking-copilot-container .preview-card .loading-spin {
+  position: absolute;
+  top: 40%;
+  left: 50%;
+  transform: translateX(-50%);
+}
+.tracking-copilot-container .preview-card .loading-spin .ant-spin-text {
+  color: #8b949e;
+  text-shadow: none;
+}
+.tracking-copilot-container .preview-card .code-content {
+  margin: 0;
+  color: #d2a8ff;
+  font-family: "Fira Code", monospace;
+  font-size: 14px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+.tracking-copilot-container .preview-card .empty-state {
+  margin-top: 60px;
+}
+.tracking-copilot-container .preview-card .empty-state .ant-empty-description {
+  color: #8b949e;
+}
