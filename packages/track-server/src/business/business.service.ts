@@ -1,7 +1,11 @@
 import { Injectable } from '@nestjs/common'
+import { PerformanceService } from './performance-analysis/performance.service'
+import { EventDto } from '../dto/event'
 
 @Injectable()
 export class BusinessService {
+  constructor(private readonly performanceService: PerformanceService) {}
+
   getAnalysis(params: any): any {
     // 分析逻辑
     return { data: [], total: 0 }
@@ -12,8 +16,15 @@ export class BusinessService {
     return { id: 1, ...alert }
   }
 
-  processEvent(event: any): void {
+  async processEvent(event: EventDto): Promise<void> {
     // 处理事件逻辑
-    console.log('业务层 处理事件...')
+    if (event.type === 'performance') {
+      // 处理性能事件
+      await this.performanceService.analyzePerformance(event)
+    } else if (event.type === 'error') {
+      // 处理错误事件
+    } else if (event.type === 'user') {
+      // 处理用户事件
+    }
   }
 }
