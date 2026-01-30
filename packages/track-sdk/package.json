@@ -1,7 +1,7 @@
 {
-    "name": "@ai-drawing-tracking-sdk",
+    "name": "track-sdk",
     "version": "0.1.0",
-    "description": "Front-end tracking SDK for ai-drawing (behavior, performance, error)",
+    "description": "Front-end tracking SDK  (behavior, performance, error)",
     "private": false,
     "main": "dist/index.cjs.js",
     "module": "dist/index.esm.js",
