@@ -1,7 +1,5 @@
 import type { PageViewEvent } from '../types'
-import { trackBehavior } from '../api/trackBehavior'
-
-export type HandlerReport = (eventName: string, payload?: unknown) => void
+import { trackBehavior } from '../utils/trackBehavior'
 
 interface RouteInfo {
   path: string
@@ -39,32 +37,32 @@ function reportPageView(customReferrer?: string): void {
 export function initPageViewHandler(): () => void {
   let prevRoute: RouteInfo = getRouteInfo()
   let initialized = false
-  let debounceTimer: number | null = null
+  let reportTimer: number | null = null
 
+  // 路由处理逻辑
   const handleRouteChange = (): void => {
-    // 清除之前的防抖定时器
-    if (debounceTimer !== null) {
-      clearTimeout(debounceTimer)
+    if (reportTimer !== null) {
+      clearTimeout(reportTimer)
     }
 
-    // 设置 100ms 防抖
-    debounceTimer = window.setTimeout(() => {
+    reportTimer = window.setTimeout(() => {
       const currentRoute = getRouteInfo()
 
-      // 去重：URL 未变化则不上报
+      // 如果已初始化且 URL 无变化，则跳过（去重）
       if (initialized && prevRoute.fullUrl === currentRoute.fullUrl) {
+        reportTimer = null
         return
       }
 
-      // 上报当前页面浏览事件，传入上一个页面的 URL 作为 referrer
+      // 计算 referrer：首屏使用 document.referrer，后续跳转使用上一个页面的 URL
       const customReferrer = initialized ? prevRoute.fullUrl : undefined
       reportPageView(customReferrer)
 
       // 更新状态
       prevRoute = currentRoute
       initialized = true
-      debounceTimer = null
-    }, 100)
+      reportTimer = null
+    }, 0)
   }
 
   // 监听页面加载
@@ -87,9 +85,9 @@ export function initPageViewHandler(): () => void {
 
   // 监听页面卸载
   const handleUnload = () => {
-    // 清除防抖定时器
-    if (debounceTimer !== null) {
-      clearTimeout(debounceTimer)
+    // 清除待上报任务
+    if (reportTimer !== null) {
+      clearTimeout(reportTimer)
     }
   }
   window.addEventListener('beforeunload', handleUnload)
@@ -110,10 +108,13 @@ export function initPageViewHandler(): () => void {
     return result
   }
 
+  // 立即执行一次检测
+  handleRouteChange()
+
+  // 返回清理函数
   return () => {
-    // 清除防抖定时器
-    if (debounceTimer !== null) {
-      clearTimeout(debounceTimer)
+    if (reportTimer !== null) {
+      clearTimeout(reportTimer)
     }
 
     // 移除事件监听
