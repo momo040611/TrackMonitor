@@ -1,10 +1,16 @@
 import { Injectable } from '@nestjs/common'
 import { PerformanceService } from './performance-analysis/performance.service'
-import { EventDto } from '../dto/event'
+import { EventDto } from '../common/dto/event'
+import { StorageService } from '../storage/storage.service'
+import { ErrorService } from './error-analysis/error.service'
 
 @Injectable()
 export class BusinessService {
-  constructor(private readonly performanceService: PerformanceService) {}
+  constructor(
+    private readonly performanceService: PerformanceService,
+    private readonly storageService: StorageService,
+    private readonly errorService: ErrorService
+  ) {}
 
   getAnalysis(params: any): any {
     // 分析逻辑
@@ -16,15 +22,8 @@ export class BusinessService {
     return { id: 1, ...alert }
   }
 
-  async processEvent(event: EventDto): Promise<void> {
-    // 处理事件逻辑
-    if (event.type === 'performance') {
-      // 处理性能事件
-      await this.performanceService.analyzePerformance(event)
-    } else if (event.type === 'error') {
-      // 处理错误事件
-    } else if (event.type === 'user') {
-      // 处理用户事件
-    }
+  async reportErrorEvent(event: EventDto): Promise<void> {
+    // 调用 ErrorService 上报错误事件
+    await this.errorService.reportErrorEvent(event)
   }
 }

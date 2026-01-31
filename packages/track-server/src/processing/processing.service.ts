@@ -1,17 +1,31 @@
 import { Injectable } from '@nestjs/common'
 import { BusinessService } from '../business/business.service'
-import { EventDto } from '../dto/event'
+import { EventDto } from '../common/dto/event'
+import { StorageService } from '../storage/storage.service'
 
 @Injectable()
 export class ProcessingService {
-  constructor(private readonly businessService: BusinessService) {}
+  constructor(
+    private readonly businessService: BusinessService,
+    private readonly storageService: StorageService
+  ) {}
 
   async processEvent(event: EventDto): Promise<void> {
-    // 数据验证
-    // 数据转换
-    // 存储到数据库（暂时注释，等待数据库配置）
-    console.log('数据存储 加工...')
-    // 调用业务层
-    await this.businessService.processEvent(event)
+    //  根据事件类型调用相应业务逻辑
+    switch (event.type) {
+      case 'error':
+        await this.businessService.reportErrorEvent(event)
+        break
+      case 'performance':
+        break
+      case 'userBehavior':
+        break
+      default:
+        console.warn(`Unknown event type: ${event.type}`)
+    }
+  }
+  // 简单查询 不走业务层
+  async getEvents(type: string, time: string, limit: number): Promise<any[]> {
+    return await this.storageService.getEvents({ type, time: Number(time), limit })
   }
 }

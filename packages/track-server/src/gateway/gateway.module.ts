@@ -5,9 +5,10 @@ import { AuthModule } from './auth/auth.module'
 import { RateLimitModule } from './rate-limit/rate-limit.module'
 import { RouterModule } from './router/router.module'
 import { QueueModule } from '../queue/queue.module'
+import { ProcessingModule } from '../processing/processing.module'
 
 @Module({
-  imports: [AuthModule, RateLimitModule, RouterModule, QueueModule],
+  imports: [AuthModule, RateLimitModule, RouterModule, QueueModule, ProcessingModule],
   controllers: [GatewayController],
   providers: [GatewayService],
   exports: [GatewayService],

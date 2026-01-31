@@ -9,10 +9,12 @@ export class EventEntity {
   @Column()
   type: string
 
+  @Column()
+  url: string
+
   @Column({ type: 'json', nullable: true })
   data: Record<string, any>
 
-  // 方案1：设为可空
   @Column({ nullable: true })
   userId: number
 

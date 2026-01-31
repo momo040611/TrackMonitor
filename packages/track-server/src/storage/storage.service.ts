@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common'
 import { DatabaseService } from './database/database.service'
-import { EventDto } from '../dto/event'
+import { EventDto } from '../common/dto/event'
 
 @Injectable()
 export class StorageService {

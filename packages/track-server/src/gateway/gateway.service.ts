@@ -1,15 +1,31 @@
 import { Injectable } from '@nestjs/common'
 import { QueueService } from '../queue/queue.service'
-import { EventDto } from '../dto/event'
+import { ProcessingService } from '../processing/processing.service'
+import { EventDto } from '../common/dto/event'
 
 @Injectable()
 export class GatewayService {
-  constructor(private readonly queueService: QueueService) {}
-
+  constructor(
+    private readonly queueService: QueueService,
+    private readonly processingService: ProcessingService
+  ) {}
+  //单一队列
   async trackEvent(event: EventDto): Promise<{ success: boolean }> {
     // 验证、限流等处理
     // 发送到队列
     await this.queueService.pushEvent(event)
     return { success: true }
+  }
+
+  async trackEvents(events: Array<EventDto>) {
+    // 批量上报机制
+    events.forEach(async (item) => {
+      await this.queueService.pushEvent(item)
+    })
+    return { sucess: true }
+  }
+
+  async getEvents(type: string, time: string, limit: number) {
+    return await this.processingService.getEvents(type, time, limit)
   }
 }

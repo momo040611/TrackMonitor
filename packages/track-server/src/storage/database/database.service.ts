@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
-import { EventDto } from 'src/dto/event'
+import { EventDto } from 'src/common/dto/event'
 import { EventEntity } from './entities/event.entity'
 
 @Injectable()
@@ -18,8 +18,16 @@ export class DatabaseService {
     return eventEntity.id
   }
 
-  async getEvents(params: any): Promise<any[]> {
+  async getEvents(params: { type?: string; time?: number; limit?: number }): Promise<any[]> {
     // 获取事件逻辑
-    return this.eventRepository.find(params)
+    return this.eventRepository.find({
+      where: {
+        type: params.type,
+      },
+      order: {
+        timestamp: 'DESC',
+      },
+      take: params.limit,
+    })
   }
 }
