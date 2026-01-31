@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react'
 import type { ReactNode } from 'react'
-import * as auth from '../../auth-provider'
+import * as auth from '../auth-provider'
 import { useAsync } from '../utils/use-async'
 import type { User } from '../types/user'
 
@@ -13,15 +13,11 @@ const bootstrapUser = async () => {
   let user = null
   const token = auth.getToken()
   if (token) {
-    // 从本地存储获取用户数据
-    user = auth.getUser()
-    // 如果本地存储中没有用户数据，使用默认值
-    if (!user) {
-      user = {
-        id: '1',
-        username: 'test',
-        token: token,
-      }
+    try {
+      const result = (await auth.getCurrentUser?.()) ?? null
+      user = result
+    } catch (error) {
+      console.log('Bootstrap user error:', error)
     }
   }
   return user
@@ -33,9 +29,11 @@ const AuthContext = React.createContext<
       register: (form: AuthForm) => Promise<void>
       login: (form: AuthForm) => Promise<void>
       logout: () => Promise<void>
+      checkUsername: (username: string) => Promise<void>
     }
   | undefined
 >(undefined)
+
 AuthContext.displayName = 'AuthContext'
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
@@ -48,6 +46,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     auth.logout().then(() => {
       setUser(null)
     })
+  const checkUsername = (username: string) => auth.checkUsername(username)
 
   useEffect(() => {
     run(bootstrapUser())
@@ -82,7 +81,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   return (
     <AuthContext.Provider
       children={children}
-      value={{ user: user || null, login, register, logout }}
+      value={{ user: user || null, login, register, logout, checkUsername }}
     />
   )
 }

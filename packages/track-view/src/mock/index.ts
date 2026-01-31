@@ -1,123 +1,100 @@
-// 模拟数据
+import type { MockMethod } from 'vite-plugin-mock'
 
-// 用户数据
-export const userData = {
-  username: 'admin',
-  password: '123456',
-  token: 'mock-token',
+console.log('Mock module loaded')
+// 只在 Node.js 环境中打印当前工作目录
+if (typeof process !== 'undefined') {
+  console.log('Current working directory:', process.cwd())
 }
 
-// 基础数据概览
-export const overviewData = {
-  activeUsers: 1234,
-  totalEvents: 56789,
-  successRate: 99.9,
-  errorRate: 0.1,
-}
-
-// 用户行为路径
-export const userPathData = [
-  {
-    id: 1,
-    action: '应用启动',
-    time: '2026-01-27 10:00:00',
-  },
-  {
-    id: 2,
-    action: '进入首页',
-    time: '2026-01-27 10:00:05',
-  },
-  {
-    id: 3,
-    action: '点击按钮',
-    time: '2026-01-27 10:00:10',
-  },
-  {
-    id: 4,
-    action: '离开页面',
-    time: '2026-01-27 10:00:15',
-  },
+// 模拟用户数据
+const mockUsers = [
+  { id: '1', username: 'admin', password: '123456', token: 'mock-token-admin' },
+  { id: '2', username: 'test', password: '123456', token: 'mock-token-test' },
 ]
 
-// 用户画像
-export const userProfileData = {
-  deviceType: '移动设备',
-  os: 'iOS 17.0',
-  browser: 'Safari 17.0',
-  region: '中国',
+// 登录接口
+const loginMock: MockMethod = {
+  url: '/api/login',
+  method: 'post',
+  response: (options: any) => {
+    const { username, password } = options.body
+    const user = mockUsers.find((u) => u.username === username && u.password === password)
+
+    if (user) {
+      return { code: 200, user }
+    } else {
+      return { code: 401, message: '用户名或密码错误' }
+    }
+  },
 }
 
-// 智能大厅功能模块
-export const smartHallModules = [
-  {
-    id: 1,
-    title: '数据可视化大屏',
-    description: '实时监控SDK使用情况',
-    icon: '📊',
-    color: '#1890ff',
-    bgColor: '#f0f9ff',
-    borderColor: '#e6f7ff',
-  },
-  {
-    id: 2,
-    title: '告警中心',
-    description: '及时发现并处理异常',
-    icon: '🚨',
-    color: '#52c41a',
-    bgColor: '#f6ffed',
-    borderColor: '#d9f7be',
-  },
-  {
-    id: 3,
-    title: '性能分析',
-    description: '深度分析SDK性能问题',
-    icon: '📈',
-    color: '#fa8c16',
-    bgColor: '#fff7e6',
-    borderColor: '#ffe7ba',
-  },
-  {
-    id: 4,
-    title: '用户行为追踪',
-    description: '精准定位用户行为路径',
-    icon: '🔍',
-    color: '#f5222d',
-    bgColor: '#fff0f0',
-    borderColor: '#ffccc7',
-  },
-]
+// 注册接口
+const registerMock: MockMethod = {
+  url: '/api/register',
+  method: 'post',
+  response: (options: any) => {
+    const { username, password } = options.body
+    const existingUser = mockUsers.find((u) => u.username === username)
 
-// 数据分析图表数据
-export const analysisData = {
-  trend: [
-    { date: '2026-01-21', value: 800 },
-    { date: '2026-01-22', value: 1200 },
-    { date: '2026-01-23', value: 1000 },
-    { date: '2026-01-24', value: 1500 },
-    { date: '2026-01-25', value: 1300 },
-    { date: '2026-01-26', value: 1800 },
-    { date: '2026-01-27', value: 1234 },
-  ],
-  performance: [
-    { name: '启动时间', value: 150 },
-    { name: '响应时间', value: 80 },
-    { name: '上报时间', value: 50 },
-    { name: '处理时间', value: 30 },
-  ],
-  errorRate: [
-    { date: '2026-01-21', value: 0.2 },
-    { date: '2026-01-22', value: 0.15 },
-    { date: '2026-01-23', value: 0.1 },
-    { date: '2026-01-24', value: 0.08 },
-    { date: '2026-01-25', value: 0.12 },
-    { date: '2026-01-26', value: 0.09 },
-    { date: '2026-01-27', value: 0.1 },
-  ],
+    if (existingUser) {
+      return { code: 400, message: '用户名已存在' }
+    } else {
+      const newUser = {
+        id: Date.now().toString(36),
+        username,
+        password,
+        token: `mock-token-${Date.now()}`,
+      }
+      mockUsers.push(newUser)
+      return { code: 200, user: newUser }
+    }
+  },
 }
 
-// SDK设置选项
-export const sdkSettings = {
-  sampleRate: 100,
-  reportInterval: 10000,
-  debugMode: false,
+// 获取当前用户信息接口
+const meMock: MockMethod = {
+  url: '/api/me',
+  method: 'get',
+  response: (options: any) => {
+    const authHeader = options.headers.authorization
+    if (!authHeader) {
+      return { code: 401, message: '请重新登录' }
+    }
+
+    const token = authHeader.split(' ')[1]
+    const user = mockUsers.find((u) => u.token === token)
+
+    if (user) {
+      return { code: 200, user }
+    } else {
+      return { code: 401, message: '请重新登录' }
+    }
+  },
 }
+
+// 检查用户名是否已存在接口
+const checkUsernameMock: MockMethod = {
+  url: '/api/check-username',
+  method: 'post',
+  response: (options: any) => {
+    const { username } = options.body
+    const existingUser = mockUsers.find((u) => u.username === username)
+
+    if (existingUser) {
+      return { code: 400, message: '用户名已存在' }
+    } else {
+      return { code: 200, message: '用户名可用' }
+    }
+  },
+}
+
+// 导出模拟接口
+const mockModules = [loginMock, registerMock, meMock, checkUsernameMock]
+
+// 导出生产环境使用的函数
+export const setupProdMockServer = () => {
+  // 生产环境中我们不使用模拟接口
+}
+
+// 导出模拟模块
+export default mockModules

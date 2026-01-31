@@ -46,7 +46,7 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   ]
 
   const [showLogout, setShowLogout] = React.useState(false)
-  const logoutTimeoutRef = React.useRef<number | null>(null)
+  const logoutTimeoutRef = React.useRef<NodeJS.Timeout | null>(null)
 
   const handleLogout = async () => {
     await logout()
