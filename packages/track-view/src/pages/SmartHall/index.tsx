@@ -1,7 +1,8 @@
 import React from 'react'
 import { Tabs, Typography } from 'antd'
 import { TrackingCopilot } from './components/TrackingCopilot/TrackingCopilot'
-import { CodeOutlined, BugOutlined } from '@ant-design/icons'
+import { LogParser } from './components/LogParser/LogParser'
+import { CodeOutlined, BugOutlined, FileTextOutlined } from '@ant-design/icons'
 import './SmartHall.less'
 
 const { Title, Paragraph } = Typography
@@ -26,6 +27,15 @@ const SmartHall: React.FC = () => {
         </span>
       ),
       children: <div>异常诊断模块开发中...</div>,
+    },
+    {
+      key: '3',
+      label: (
+        <span>
+          <FileTextOutlined /> 日志智能解析
+        </span>
+      ),
+      children: <LogParser />,
     },
   ]
 
