@@ -1,4 +1,4 @@
-import { trackBehavior } from '../api/trackBehavior'
+import { trackBehavior } from '../utils/trackBehavior'
 import type { WorkClickEvent } from '../types'
 
 /**
