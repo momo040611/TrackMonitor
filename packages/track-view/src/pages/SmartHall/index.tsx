@@ -2,6 +2,7 @@ import React from 'react'
 import { Tabs, Typography } from 'antd'
 import { TrackingCopilot } from './components/TrackingCopilot/TrackingCopilot'
 import { LogParser } from './components/LogParser/LogParser'
+import { AnomalyDiagnosis } from './components/AnomalyDiagnosis/AnomalyDiagnosis'
 import { CodeOutlined, BugOutlined, FileTextOutlined } from '@ant-design/icons'
 import './SmartHall.less'
 
@@ -26,7 +27,7 @@ const SmartHall: React.FC = () => {
           <BugOutlined /> 异常诊断
         </span>
       ),
-      children: <div>异常诊断模块开发中...</div>,
+      children: <AnomalyDiagnosis />,
     },
     {
       key: '3',
