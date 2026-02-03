@@ -1,25 +1,25 @@
 {
-    "name": "track-sdk",
-    "version": "0.1.0",
-    "description": "Front-end tracking SDK  (behavior, performance, error)",
-    "private": false,
-    "main": "dist/index.cjs.js",
-    "module": "dist/index.esm.js",
-    "types": "dist/index.d.ts",
-    "sideEffects": false,
-    "scripts": {
-        "build": "rollup -c",
-        "type-check": "tsc -p tsconfig.json --noEmit",
-        "clean": "rimraf dist"
-    },
-    "peerDependencies": {},
-    "devDependencies": {
-        "rollup": "^4.0.0",
-        "@rollup/plugin-node-resolve": "^15.0.0",
-        "@rollup/plugin-commonjs": "^25.0.0",
-        "@rollup/plugin-typescript": "^11.0.0",
-        "rollup-plugin-terser": "^7.0.0",
-        "rimraf": "^5.0.0",
-        "typescript": "^5.0.0"
-    }
+  "name": "track-sdk",
+  "version": "0.1.0",
+  "description": "Front-end tracking SDK  (behavior, performance, error)",
+  "private": false,
+  "main": "dist/index.cjs.js",
+  "module": "dist/index.esm.js",
+  "types": "dist/index.d.ts",
+  "sideEffects": false,
+  "scripts": {
+    "build": "rollup -c",
+    "type-check": "tsc -p tsconfig.json --noEmit",
+    "clean": "rimraf dist"
+  },
+  "peerDependencies": {},
+  "devDependencies": {
+    "rollup": "^4.0.0",
+    "@rollup/plugin-node-resolve": "^15.0.0",
+    "@rollup/plugin-commonjs": "^25.0.0",
+    "@rollup/plugin-typescript": "^11.0.0",
+    "rollup-plugin-terser": "^7.0.0",
+    "rimraf": "^5.0.0",
+    "typescript": "^5.0.0"
+  }
 }
