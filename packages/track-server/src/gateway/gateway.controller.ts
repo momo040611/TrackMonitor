@@ -1,7 +1,8 @@
-import { Controller, Post, Get, Body, Query, HttpCode, HttpStatus } from '@nestjs/common'
+import { Controller, Post, Get, Body, Query, HttpCode, HttpStatus, UsePipes } from '@nestjs/common'
 import { GatewayService } from './gateway.service'
 import { EventDto } from '../common/dto/event'
 import { getEventParams } from '../common/dto/eventParams'
+import { EventPipe } from '../common/pipes/event.pipe'
 
 @Controller('gateway')
 export class GatewayController {
@@ -9,6 +10,7 @@ export class GatewayController {
 
   //埋点数据上传相关接口
   @Post('event')
+  @UsePipes(new EventPipe())
   @HttpCode(HttpStatus.OK)
   async trackEvent(@Body() event: EventDto) {
     return this.gatewayService.trackEvent(event)
@@ -46,8 +48,8 @@ export class GatewayController {
   }
 
   //获取自定义事件
-  @Get('getCustomEvent')
-  getCustomEvent(@Query() getParams: getEventParams) {
-    return this.gatewayService.getEvents(getParams.type, getParams.time, getParams.limit)
+  @Get('getEvent')
+  getEvent(@Query() getParams: getEventParams) {
+    return this.gatewayService.getEvents(getParams.type || 'all', getParams.time, getParams.limit)
   }
 }

@@ -1,3 +1,5 @@
+import { IsJSON, IsNotEmpty, IsString, IsOptional, IsNumber } from 'class-validator'
+
 export enum EventPriority {
   LOW = 'low',
   MEDIUM = 'medium',
@@ -5,10 +7,23 @@ export enum EventPriority {
 }
 
 export class EventDto {
-  id: number
+  @IsString()
+  @IsNotEmpty()
   type: string
+
+  @IsJSON()
+  @IsNotEmpty()
   data: JSON
-  userId: string
-  timestamp: number
+
+  @IsString()
+  @IsOptional()
+  url: string
+
+  @IsString()
+  @IsOptional()
   priority: EventPriority
+
+  @IsNumber()
+  @IsOptional()
+  userId: number
 }

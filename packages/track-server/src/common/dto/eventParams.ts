@@ -1,5 +1,5 @@
 export class getEventParams {
-  type: string
+  type?: string
   time: string
   limit: number
 }

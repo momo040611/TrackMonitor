@@ -28,4 +28,9 @@ export class ProcessingService {
   async getEvents(type: string, time: string, limit: number): Promise<any[]> {
     return await this.storageService.getEvents({ type, time: Number(time), limit })
   }
+
+  // 获取所有事件
+  async getEventList(type: string): Promise<any[]> {
+    return await this.storageService.getEvents({ type })
+  }
 }

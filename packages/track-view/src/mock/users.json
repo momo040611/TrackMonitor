@@ -1,0 +1,16 @@
+{
+  "users": [
+    {
+      "id": "1",
+      "username": "admin",
+      "password": "123456",
+      "token": "mock-token-admin"
+    },
+    {
+      "id": "2",
+      "username": "test",
+      "password": "123456",
+      "token": "mock-token-test"
+    }
+  ]
+}
