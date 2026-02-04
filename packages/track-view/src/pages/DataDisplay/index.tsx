@@ -17,6 +17,7 @@ import {
   Statistic,
   Badge,
   Spin,
+  message,
 } from 'antd'
 import ReactECharts from 'echarts-for-react'
 import type { EChartsOption } from 'echarts'
@@ -40,6 +41,9 @@ import {
   PauseCircleOutlined,
 } from '@ant-design/icons'
 
+// 导入 API 接口
+import { api } from '../../api/request'
+
 // 注册 ECharts 组件
 echarts.use([
   LineChart,
@@ -57,7 +61,6 @@ const { RangePicker } = DatePicker
 const { Option } = Select
 const { TextArea } = Input
 const { Item } = Form
-const { TabPane } = Tabs
 
 const DataDisplay: React.FC = () => {
   // 状态管理
@@ -74,88 +77,84 @@ const DataDisplay: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true)
   const [form] = Form.useForm()
 
+  // API 数据状态
+  const [overviewData, setOverviewData] = useState({
+    totalPV: 0,
+    totalUV: 0,
+    todayTracking: 0,
+    yoyGrowth: 0,
+    momGrowth: 0,
+  })
+  const [trendData, setTrendData] = useState<any[]>([])
+  const [typeDistributionData, setTypeDistributionData] = useState<any[]>([])
+  const [topTrackingData, setTopTrackingData] = useState<any[]>([])
+  const [funnelData, setFunnelData] = useState<any[]>([])
+  const [trackingData, setTrackingData] = useState<any[]>([])
+
   // Ref
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
   const chartRefs = useRef<{ [key: string]: any }>({})
 
-  // 模拟数据
-  const overviewData = {
-    totalPV: 123456,
-    totalUV: 78901,
-    todayTracking: 5678,
-    yoyGrowth: 12.5,
-    momGrowth: 8.3,
+  // 数据获取函数
+  const fetchData = async () => {
+    try {
+      setIsLoading(true)
+
+      // 并行请求所有数据
+      const [
+        overviewRes,
+        trendRes,
+        typeDistributionRes,
+        topTrackingRes,
+        funnelRes,
+        trackingListRes,
+      ] = await Promise.all([
+        api.getOverviewData({ projectId: selectedProject, timeRange }),
+        api.getTrendData({
+          projectId: selectedProject,
+          timeRange,
+          metrics: ['clicks', 'impressions'],
+        }),
+        api.getTypeDistributionData({ projectId: selectedProject, timeRange }),
+        api.getTopTrackingData({ projectId: selectedProject, timeRange, limit: 10 }),
+        api.getFunnelData({ projectId: selectedProject, timeRange }),
+        api.getTrackingList({ projectId: selectedProject, type: trackingType }),
+      ])
+
+      // 更新状态
+      setOverviewData(
+        overviewRes.data || {
+          totalPV: 0,
+          totalUV: 0,
+          todayTracking: 0,
+          yoyGrowth: 0,
+          momGrowth: 0,
+        }
+      )
+
+      setTrendData(trendRes.data || [])
+      setTypeDistributionData(typeDistributionRes.data || [])
+      setTopTrackingData(topTrackingRes.data || [])
+      setFunnelData(funnelRes.data || [])
+      setTrackingData(trackingListRes.data || [])
+    } catch (error) {
+      console.error('获取数据失败:', error)
+      message.error('获取数据失败，请稍后重试')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
-  // 趋势数据（用于折线图）
-  const trendData = Array.from({ length: 30 }, (_, i) => {
-    const date = new Date()
-    date.setDate(date.getDate() - 29 + i)
-    return {
-      date: date.toISOString().split('T')[0],
-      clicks: Math.floor(Math.random() * 1000) + 500,
-      impressions: Math.floor(Math.random() * 2000) + 1000,
+  // 获取实时数据
+  const fetchRealtimeData = async () => {
+    try {
+      const res = await api.getRealtimeData({ projectId: selectedProject })
+      setRealtimeData(res.data?.count || 0)
+    } catch (error) {
+      console.error('获取实时数据失败:', error)
     }
-  })
-
-  const typeDistributionData = [
-    { type: '点击', value: 4500, percentage: 45, color: '#1890ff' },
-    { type: '曝光', value: 3000, percentage: 30, color: '#52c41a' },
-    { type: '激活', value: 1500, percentage: 15, color: '#faad14' },
-    { type: '转化', value: 1000, percentage: 10, color: '#f5222d' },
-  ]
-
-  const topTrackingData = Array.from({ length: 10 }, (_, i) => ({
-    key: i,
-    name: `埋点${i + 1}`,
-    clicks: Math.floor(Math.random() * 1000) + 100,
-    status: i % 2 === 0 ? 'normal' : 'warning',
-  })).sort((a, b) => b.clicks - a.clicks)
-
-  const funnelData = [
-    { name: '曝光', value: 10000, percentage: 100, color: '#1890ff' },
-    { name: '点击', value: 6000, percentage: 60, color: '#52c41a' },
-    { name: '激活', value: 3000, percentage: 30, color: '#faad14' },
-    { name: '转化', value: 1500, percentage: 15, color: '#f5222d' },
-  ]
-
-  // 埋点配置数据
-  const trackingData = [
-    {
-      key: '1',
-      id: '#1001',
-      name: '首页 Banner 点击',
-      type: '点击',
-      page: '/home',
-      trigger: '元素点击',
-      status: 'active',
-      statusText: '已生效',
-      statusIcon: '✅',
-    },
-    {
-      key: '2',
-      id: '#1002',
-      name: '商品详情页曝光',
-      type: '曝光',
-      page: '/product',
-      trigger: '页面加载',
-      status: 'pending',
-      statusText: '待发布',
-      statusIcon: '⚠️',
-    },
-    {
-      key: '3',
-      id: '#1003',
-      name: '支付按钮点击',
-      type: '点击',
-      page: '/pay',
-      trigger: '元素点击',
-      status: 'inactive',
-      statusText: '已失效',
-      statusIcon: '❌',
-    },
-  ]
+  }
 
   // 表格列配置
   const columns = [
@@ -290,7 +289,7 @@ const DataDisplay: React.FC = () => {
     grid: { left: '3%', right: '4%', bottom: '15%', top: '15%', containLabel: true },
     xAxis: {
       type: 'category',
-      data: trendData.map((item) => item.date),
+      data: trendData.length > 0 ? trendData.map((item) => item.date) : [],
       axisLabel: { rotate: 45 },
     },
     yAxis: { type: 'value' },
@@ -298,14 +297,14 @@ const DataDisplay: React.FC = () => {
       {
         name: '点击量',
         type: 'line',
-        data: trendData.map((item) => item.clicks),
+        data: trendData.length > 0 ? trendData.map((item) => item.clicks) : [],
         smooth: true,
         lineStyle: { color: '#1890ff' },
       },
       {
         name: '曝光量',
         type: 'line',
-        data: trendData.map((item) => item.impressions),
+        data: trendData.length > 0 ? trendData.map((item) => item.impressions) : [],
         smooth: true,
         lineStyle: { color: '#52c41a' },
       },
@@ -332,11 +331,14 @@ const DataDisplay: React.FC = () => {
           label: { fontSize: 12, fontWeight: 'bold' },
           itemStyle: { shadowBlur: 10, shadowOffsetX: 0, shadowColor: 'rgba(0, 0, 0, 0.5)' },
         },
-        data: typeDistributionData.map((item) => ({
-          name: item.type,
-          value: item.value,
-          itemStyle: { color: item.color },
-        })),
+        data:
+          typeDistributionData.length > 0
+            ? typeDistributionData.map((item) => ({
+                name: item.type,
+                value: item.value,
+                itemStyle: { color: item.color },
+              }))
+            : [],
       },
     ],
   }
@@ -352,14 +354,14 @@ const DataDisplay: React.FC = () => {
     },
     yAxis: {
       type: 'category',
-      data: topTrackingData.map((item) => item.name),
+      data: topTrackingData.length > 0 ? topTrackingData.map((item) => item.name) : [],
       axisLabel: { rotate: 0 },
     },
     series: [
       {
         name: '点击量',
         type: 'bar',
-        data: topTrackingData.map((item) => item.clicks),
+        data: topTrackingData.length > 0 ? topTrackingData.map((item) => item.clicks) : [],
         itemStyle: { color: '#1890ff' },
       },
     ],
@@ -369,7 +371,7 @@ const DataDisplay: React.FC = () => {
   const funnelChartOption: EChartsOption = {
     title: { text: '转化漏斗', left: 'center', textStyle: { fontSize: 14 } },
     tooltip: { trigger: 'item', formatter: '{a} <br/>{b} : {c} ({d}%)' },
-    legend: { data: funnelData.map((item) => item.name), bottom: 0 },
+    legend: { data: funnelData.length > 0 ? funnelData.map((item) => item.name) : [], bottom: 0 },
     series: [
       {
         name: '转化',
@@ -396,11 +398,14 @@ const DataDisplay: React.FC = () => {
           label: { fontSize: 12 },
           itemStyle: { shadowBlur: 10, shadowOffsetX: 0, shadowColor: 'rgba(0, 0, 0, 0.5)' },
         },
-        data: funnelData.map((item) => ({
-          name: item.name,
-          value: item.value,
-          itemStyle: { color: item.color },
-        })),
+        data:
+          funnelData.length > 0
+            ? funnelData.map((item) => ({
+                name: item.name,
+                value: item.value,
+                itemStyle: { color: item.color },
+              }))
+            : [],
       },
     ],
   }
@@ -420,7 +425,7 @@ const DataDisplay: React.FC = () => {
       {
         name: '上报量',
         type: 'line',
-        data: Array.from({ length: 10 }, () => Math.floor(Math.random() * 100) + 50),
+        data: Array.from({ length: 10 }, () => realtimeData),
         smooth: true,
         lineStyle: { color: '#f5222d' },
         areaStyle: {
@@ -433,21 +438,19 @@ const DataDisplay: React.FC = () => {
     ],
   }
 
-  // 初始化加载
+  // 初始化加载和参数变化时获取数据
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false)
-    }, 1000)
-
-    return () => clearTimeout(timer)
-  }, [])
+    fetchData()
+  }, [selectedProject, timeRange, trackingType])
 
   // 实时数据更新
   useEffect(() => {
-    setRealtimeData(Math.floor(Math.random() * 1000) + 500)
+    // 初始获取一次实时数据
+    fetchRealtimeData()
 
+    // 每 10 秒更新一次实时数据
     intervalRef.current = setInterval(() => {
-      setRealtimeData((prev) => prev + Math.floor(Math.random() * 100) + 10)
+      fetchRealtimeData()
     }, 10000)
 
     return () => {
@@ -455,17 +458,31 @@ const DataDisplay: React.FC = () => {
         clearInterval(intervalRef.current)
       }
     }
-  }, [])
+  }, [selectedProject])
+
+  // Tabs 配置项
+  const tabItems = [
+    {
+      key: 'dashboard',
+      label: '数据可视化大屏',
+    },
+    {
+      key: 'tracking',
+      label: '可视化埋点配置',
+    },
+  ]
 
   return (
     <div style={{ padding: '24px', background: '#f5f5f5', minHeight: '100vh' }}>
       <h1 style={{ marginBottom: '24px', fontSize: '20px', fontWeight: '600' }}>数据可视化中心</h1>
 
       {/* Tab 切换 */}
-      <Tabs activeKey={activeTab} onChange={setActiveTab} style={{ marginBottom: '24px' }}>
-        <TabPane tab="数据可视化大屏" key="dashboard" />
-        <TabPane tab="可视化埋点配置" key="tracking" />
-      </Tabs>
+      <Tabs
+        activeKey={activeTab}
+        onChange={setActiveTab}
+        items={tabItems}
+        style={{ marginBottom: '24px' }}
+      />
 
       {activeTab === 'dashboard' && (
         <>
@@ -525,14 +542,14 @@ const DataDisplay: React.FC = () => {
             <Row gutter={[16, 16]}>
               {/* 全局概览卡 */}
               <Col xs={24} lg={24}>
-                <Card title="全局概览" bordered={false} style={{ background: '#fff' }}>
+                <Card title="全局概览" variant="outlined" style={{ background: '#fff' }}>
                   <Row gutter={[24, 16]}>
                     <Col xs={6} sm={6} md={4} lg={4}>
                       <Statistic
                         title="总 PV"
                         value={overviewData.totalPV}
                         prefix={<Badge status="success" />}
-                        valueStyle={{ fontSize: 20, fontWeight: 600 }}
+                        styles={{ content: { fontSize: 20, fontWeight: 600 } }}
                       />
                     </Col>
                     <Col xs={6} sm={6} md={4} lg={4}>
@@ -540,7 +557,7 @@ const DataDisplay: React.FC = () => {
                         title="总 UV"
                         value={overviewData.totalUV}
                         prefix={<Badge status="processing" />}
-                        valueStyle={{ fontSize: 20, fontWeight: 600 }}
+                        styles={{ content: { fontSize: 20, fontWeight: 600 } }}
                       />
                     </Col>
                     <Col xs={6} sm={6} md={4} lg={4}>
@@ -548,7 +565,7 @@ const DataDisplay: React.FC = () => {
                         title="今日埋点上报量"
                         value={overviewData.todayTracking}
                         prefix={<Badge status="default" />}
-                        valueStyle={{ fontSize: 20, fontWeight: 600 }}
+                        styles={{ content: { fontSize: 20, fontWeight: 600 } }}
                       />
                     </Col>
                     <Col xs={6} sm={6} md={4} lg={4}>
@@ -557,16 +574,7 @@ const DataDisplay: React.FC = () => {
                         value={overviewData.yoyGrowth}
                         suffix="%"
                         prefix={<Badge status="success" />}
-                        valueStyle={{ fontSize: 20, fontWeight: 600, color: '#52c41a' }}
-                      />
-                    </Col>
-                    <Col xs={12} sm={12} md={4} lg={4}>
-                      <Statistic
-                        title="环比增长"
-                        value={overviewData.momGrowth}
-                        suffix="%"
-                        prefix={<Badge status="processing" />}
-                        valueStyle={{ fontSize: 20, fontWeight: 600, color: '#faad14' }}
+                        styles={{ content: { fontSize: 20, fontWeight: 600, color: '#52c41a' } }}
                       />
                     </Col>
                     <Col xs={12} sm={12} md={4} lg={4}>
@@ -574,7 +582,7 @@ const DataDisplay: React.FC = () => {
                         title="实时上报量"
                         value={realtimeData}
                         prefix={<Badge status="warning" />}
-                        valueStyle={{ fontSize: 20, fontWeight: 600, color: '#f5222d' }}
+                        styles={{ content: { fontSize: 20, fontWeight: 600, color: '#f5222d' } }}
                       />
                     </Col>
                   </Row>
@@ -583,7 +591,7 @@ const DataDisplay: React.FC = () => {
 
               {/* 埋点趋势卡 */}
               <Col xs={24} lg={12}>
-                <Card title="埋点趋势" bordered={false} style={{ background: '#fff' }}>
+                <Card title="埋点趋势" variant="outlined" style={{ background: '#fff' }}>
                   <div style={{ height: 300 }}>
                     <ReactECharts
                       ref={(e) => {
@@ -599,7 +607,7 @@ const DataDisplay: React.FC = () => {
 
               {/* 埋点类型占比卡 */}
               <Col xs={24} lg={12}>
-                <Card title="埋点类型占比" bordered={false} style={{ background: '#fff' }}>
+                <Card title="埋点类型占比" variant="outlined" style={{ background: '#fff' }}>
                   <div style={{ height: 300 }}>
                     <ReactECharts
                       ref={(e) => {
@@ -615,7 +623,7 @@ const DataDisplay: React.FC = () => {
 
               {/* 热门埋点 TOP10 */}
               <Col xs={24} lg={12}>
-                <Card title="热门埋点 TOP10" bordered={false} style={{ background: '#fff' }}>
+                <Card title="热门埋点 TOP10" variant="outlined" style={{ background: '#fff' }}>
                   <div style={{ height: 300 }}>
                     <ReactECharts
                       ref={(e) => {
@@ -631,7 +639,7 @@ const DataDisplay: React.FC = () => {
 
               {/* 转化漏斗卡 */}
               <Col xs={24} lg={12}>
-                <Card title="转化漏斗" bordered={false} style={{ background: '#fff' }}>
+                <Card title="转化漏斗" variant="outlined" style={{ background: '#fff' }}>
                   <div style={{ height: 300 }}>
                     <ReactECharts
                       ref={(e) => {
@@ -647,13 +655,13 @@ const DataDisplay: React.FC = () => {
 
               {/* 实时上报卡 */}
               <Col xs={24} lg={24}>
-                <Card title="实时上报" bordered={false} style={{ background: '#fff' }}>
+                <Card title="实时上报" variant="outlined" style={{ background: '#fff' }}>
                   <Row gutter={16}>
                     <Col xs={24} md={6}>
                       <Statistic
                         title="当前上报量"
                         value={realtimeData}
-                        valueStyle={{ fontSize: 32, fontWeight: 600, color: '#f5222d' }}
+                        styles={{ content: { fontSize: 32, fontWeight: 600, color: '#f5222d' } }}
                       />
                       <div style={{ marginTop: '16px' }}>
                         <span style={{ fontSize: 14, color: '#666' }}>刷新频率: 10s/次</span>
@@ -817,7 +825,7 @@ const DataDisplay: React.FC = () => {
                   >
                     <iframe
                       ref={iframeRef}
-                      src=""
+                      src={undefined}
                       style={{ width: '100%', height: '100%', border: 'none' }}
                       title="页面预览"
                     />

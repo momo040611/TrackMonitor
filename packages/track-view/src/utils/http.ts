@@ -109,15 +109,9 @@ export const http = async (
     return data
   })
 }
-
-// JS 中的typeof，是在runtime时运行的
-// return typeof 1 === 'number'
-
-// TS 中的typeof，是在静态环境运行的
-// return (...[endpoint, config]: Parameters<typeof http>) =>
+// 自定义 hook，用于发起 HTTP 请求
 export const useHttp = () => {
   const { user } = useAuth()
-  // utility type 的用法：用泛型给它传入一个其他类型，然后utility type对这个类型进行某种操作
   return useCallback(
     (...[endpoint, config]: Parameters<typeof http>) =>
       http(endpoint, { ...config, token: user?.token }),
