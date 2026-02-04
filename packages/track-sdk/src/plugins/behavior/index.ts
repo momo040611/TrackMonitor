@@ -56,6 +56,19 @@ export function createBehaviorPlugin(options: BehaviorPluginOptions): TrackerPlu
       }
     },
 
-    onEvent() {},
+    onEvent() { },
+
+    cleanup() {
+      cleanups.forEach((fn) => {
+        try {
+          fn()
+        } catch (error) {
+          console.error('[track-sdk][behavior] 清理处理器失败:', error)
+        }
+      })
+
+      // 清空清理函数，避免重复调用
+      cleanups.length = 0
+    },
   }
 }
