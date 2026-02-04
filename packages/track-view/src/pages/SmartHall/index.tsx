@@ -3,7 +3,8 @@ import { Tabs, Typography } from 'antd'
 import { TrackingCopilot } from './components/TrackingCopilot/TrackingCopilot'
 import { LogParser } from './components/LogParser/LogParser'
 import { AnomalyDiagnosis } from './components/AnomalyDiagnosis/AnomalyDiagnosis'
-import { CodeOutlined, BugOutlined, FileTextOutlined } from '@ant-design/icons'
+import { RootCauseAnalysis } from './components/RootCauseAnalysis/RootCauseAnalysis'
+import { CodeOutlined, BugOutlined, FileTextOutlined, AimOutlined } from '@ant-design/icons'
 import './SmartHall.less'
 
 const { Title, Paragraph } = Typography
@@ -37,6 +38,15 @@ const SmartHall: React.FC = () => {
         </span>
       ),
       children: <LogParser />,
+    },
+    {
+      key: '4',
+      label: (
+        <span>
+          <AimOutlined /> 根因定位
+        </span>
+      ),
+      children: <RootCauseAnalysis />,
     },
   ]
 

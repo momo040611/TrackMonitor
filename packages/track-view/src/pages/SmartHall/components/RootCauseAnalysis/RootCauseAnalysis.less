@@ -1,0 +1,42 @@
+.root-cause-container {
+  display: flex;
+  gap: 24px;
+  
+  .analysis-card {
+    flex: 1;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    min-height: 400px;
+  }
+
+  .suspect-item {
+    padding: 16px;
+    margin-bottom: 12px;
+    background: #fff1f0;
+    border: 1px solid #ffa39e;
+    border-radius: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    &.medium-risk {
+        background: #fffbe6;
+        border-color: #ffe58f;
+    }
+    
+    .suspect-info {
+        h4 { margin: 0; font-size: 16px; }
+        p { margin: 4px 0 0; color: #666; }
+    }
+  }
+
+  .chart-area {
+    margin-top: 24px;
+    height: 300px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #fafafa;
+    border-radius: 8px;
+  }
+}
