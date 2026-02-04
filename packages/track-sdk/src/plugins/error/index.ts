@@ -1,17 +1,321 @@
-import type { TrackerPlugin } from "../../core";
+import type { TrackerPlugin, CoreContext, TrackerEvent } from '../../core'
+import { initJsError, initPromiseError, initResourceError, initHttpError } from './handlers'
+import { ErrorType, ErrorPluginOptions, ErrorInfo } from './types'
 
-export interface ErrorPluginOptions {
-    // 预留：比如是否捕获资源错误、Promise 错误等
+/**
+ * 创建错误插件的函数式实现
+ * @param options 配置选项
+ * @returns 错误插件实例
+ */
+/**
+ * 错误插件实例接口，包含基本功能和高级功能
+ */
+export interface ErrorPluginInstance extends TrackerPlugin {
+  /**
+   * 暂停错误监控
+   */
+  pause(): void
+
+  /**
+   * 恢复错误监控
+   */
+  resume(): void
+
+  /**
+   * 手动捕获错误
+   * @param error 错误对象
+   * @param metadata 附加元数据
+   */
+  captureError(error: Error, metadata?: Record<string, any>): void
+
+  /**
+   * 获取错误计数
+   * @returns 错误计数
+   */
+  getErrorCount(): number
+
+  /**
+   * 重置错误计数
+   */
+  resetErrorCount(): void
+
+  /**
+   * 获取当前配置
+   * @returns 配置选项
+   */
+  getConfig(): ErrorPluginOptions
+
+  /**
+   * 更新配置
+   * @param options 配置选项
+   */
+  updateConfig(options: Partial<ErrorPluginOptions>): void
 }
 
-export function createErrorPlugin(_options: ErrorPluginOptions = {}): TrackerPlugin {
+/**
+ * 创建错误插件实例
+ * @param options 配置选项
+ * @returns 错误插件实例
+ */
+export function createErrorPlugin(options: ErrorPluginOptions = {}): ErrorPluginInstance {
+  let config: ErrorPluginOptions = {
+    jsError: true,
+    promiseError: true,
+    resourceError: true,
+    httpError: false,
+    samplingRate: 1.0,
+    maxErrorCount: 100,
+    ignoreErrors: [],
+    rules: [],
+    ...options,
+  }
+
+  let errorCount = 0
+  let enabled = true
+  let removeHandlers: Array<() => void> = []
+  let trackerInstance: any = null
+
+  const handleError = (
+    errorType: ErrorType,
+    error: Error | ErrorEvent | PromiseRejectionEvent | Event | any,
+    metadata?: Record<string, any>
+  ): void => {
+    if (!enabled) return
+
+    // 控制采样率
+    if (Math.random() > (config.samplingRate || 1.0)) return
+
+    // 控制错误数量
+    if (config.maxErrorCount && errorCount >= config.maxErrorCount) {
+      if (errorCount === config.maxErrorCount) {
+        console.warn(`[track-sdk] 错误数量已达上限 ${config.maxErrorCount}，后续错误将被忽略`)
+        errorCount++
+      }
+      return
+    }
+
+    try {
+      // 提取错误信息
+      const errorInfo = extractErrorInfo(errorType, error, metadata)
+
+      // 应用过滤规则
+      if (shouldIgnoreError(errorInfo)) {
+        return
+      }
+
+      // 上报错误
+      reportError(errorInfo)
+      errorCount++
+    } catch (e) {
+      console.error(`[track-sdk] 处理错误时发生异常: ${e}`)
+    }
+  }
+
+  const extractErrorInfo = (
+    errorType: ErrorType,
+    error: Error | ErrorEvent | PromiseRejectionEvent | Event | any,
+    metadata?: Record<string, any>
+  ): ErrorInfo => {
+    let message = ''
+    let stack = ''
+    let detail: Record<string, any> = {}
+
+    if (error instanceof Error) {
+      message = error.message
+      stack = error.stack || ''
+      detail = { name: error.name }
+    } else if (error instanceof ErrorEvent) {
+      message = error.message
+      stack = (error as any).error?.stack || ''
+      detail = {
+        filename: error.filename,
+        lineno: error.lineno,
+        colno: error.colno,
+      }
+    } else if (error instanceof PromiseRejectionEvent) {
+      const reason = error.reason
+      message = reason instanceof Error ? reason.message : String(reason)
+      stack = reason instanceof Error ? reason.stack || '' : ''
+      detail = { type: 'unhandled promise rejection' }
+    } else if (error instanceof Event) {
+      message = error.type
+      detail = {
+        target: (error.target as HTMLElement)?.outerHTML?.slice(0, 200) || '不可序列化目标',
+      }
+    } else if (error.type === 'http_error') {
+      message = `HTTP Error ${error.status}: ${error.url}`
+      detail = {
+        status: error.status,
+        url: error.url,
+        method: error.method,
+      }
+    } else {
+      message = String(error)
+      detail = { type: 'unknown error' }
+    }
+
+    const pageInfo = {
+      url: window.location.href,
+      title: document.title,
+      referrer: document.referrer,
+    }
+
     return {
-        name: "error",
-        setup() {
-            // 初始化错误监听（window.onerror / unhandledrejection 等）
-        },
-        onEvent() {
-            // 错误事件处理入口
-        },
-    };
+      type: errorType,
+      message,
+      stack,
+      time: Date.now(),
+      pageInfo,
+      userAgent: navigator.userAgent,
+      detail: {
+        ...detail,
+        ...metadata,
+      },
+    }
+  }
+
+  const shouldIgnoreError = (errorInfo: ErrorInfo): boolean => {
+    // 检查忽略列表
+    if (config.ignoreErrors) {
+      for (const pattern of config.ignoreErrors) {
+        if (typeof pattern === 'string' && errorInfo.message.includes(pattern)) {
+          return true
+        }
+        if (pattern instanceof RegExp && pattern.test(errorInfo.message)) {
+          return true
+        }
+      }
+    }
+
+    // 应用自定义规则
+    if (config.rules && config.rules.length > 0) {
+      for (const rule of config.rules) {
+        if (rule(errorInfo) === false) {
+          return true
+        }
+      }
+    }
+
+    return false
+  }
+
+  const reportError = (errorInfo: ErrorInfo): void => {
+    console.log('[track-sdk] 上报错误:', errorInfo)
+
+    // 这里可以通过tracker实例上报错误
+    if (trackerInstance && typeof trackerInstance.track === 'function') {
+      trackerInstance.track('error', errorInfo)
+    }
+  }
+
+  const installErrorHandlers = (): void => {
+    if (typeof window === 'undefined') return
+
+    try {
+      // 安装JavaScript错误监听
+      if (config.jsError) {
+        const removeJsError = initJsError(handleError)
+        removeHandlers.push(removeJsError)
+      }
+
+      // 安装Promise错误监听
+      if (config.promiseError) {
+        const removePromiseError = initPromiseError(handleError)
+        removeHandlers.push(removePromiseError)
+      }
+
+      // 安装资源错误监听
+      if (config.resourceError) {
+        const removeResourceError = initResourceError(handleError)
+        removeHandlers.push(removeResourceError)
+      }
+
+      // 安装HTTP错误监听
+      if (config.httpError) {
+        const removeHttpError = initHttpError(handleError)
+        removeHandlers.push(removeHttpError)
+      }
+    } catch (error) {
+      console.error(`[track-sdk] 安装错误处理器失败: ${error}`)
+    }
+  }
+
+  const removeAllErrorHandlers = (): void => {
+    removeHandlers.forEach((remove) => {
+      try {
+        remove()
+      } catch (error) {
+        console.error(`[track-sdk] 移除错误处理器失败: ${error}`)
+      }
+    })
+    removeHandlers = []
+  }
+
+  return {
+    name: 'error',
+    setup(context: CoreContext) {
+      // 保存tracker实例引用
+      if (context && (context as any).tracker) {
+        trackerInstance = (context as any).tracker
+      }
+
+      // 安装错误监听器
+      installErrorHandlers()
+
+      console.log('[track-sdk] 错误监控插件初始化完成')
+    },
+    onEvent(event: TrackerEvent, context: CoreContext) {
+      // 检查是否是从外部触发的错误事件
+      if (event.type === 'error' && event.payload) {
+        console.log('[track-sdk] 接收到错误事件:', event.payload)
+      }
+    },
+    cleanup() {
+      removeAllErrorHandlers()
+      console.log('[track-sdk] 错误监控插件已销毁')
+    },
+    // 高级功能
+    pause() {
+      enabled = false
+      console.log('[track-sdk] 错误监控已暂停')
+    },
+    resume() {
+      enabled = true
+      console.log('[track-sdk] 错误监控已恢复')
+    },
+    captureError(error: Error, metadata?: Record<string, any>) {
+      const errorInfo = extractErrorInfo(ErrorType.MANUAL, error, metadata)
+      if (!shouldIgnoreError(errorInfo)) {
+        reportError(errorInfo)
+        errorCount++
+      }
+      console.log('[track-sdk] 手动捕获错误:', errorInfo)
+    },
+    getErrorCount() {
+      return errorCount
+    },
+    resetErrorCount() {
+      errorCount = 0
+      console.log('[track-sdk] 错误计数已重置')
+    },
+    getConfig() {
+      return { ...config }
+    },
+    updateConfig(options: Partial<ErrorPluginOptions>) {
+      config = { ...config, ...options }
+      console.log('[track-sdk] 错误监控配置已更新:', config)
+    },
+  }
 }
+
+/**
+ * 手动捕获错误的函数
+ * @param error 错误对象
+ * @param metadata 附加元数据
+ */
+export function captureError(error: Error, metadata?: Record<string, any>): void {
+  console.log('[track-sdk] 手动捕获错误:', error, metadata)
+}
+
+// 导出类型定义
+export * from './types'
