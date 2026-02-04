@@ -2,7 +2,7 @@ import React, { useEffect } from 'react'
 import type { ReactNode } from 'react'
 import * as auth from '../auth-provider'
 import { useAsync } from '../utils/use-async'
-import type { User } from '../types/user'
+import type { User } from '../types'
 
 interface AuthForm {
   username: string
