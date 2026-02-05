@@ -59,8 +59,12 @@
         }
 
         .code-viewport {
-            min-height: 300px;
+            min-height: 350px;
             position: relative;
+            background: #1e1e1e;
+            border-radius: 8px;
+            overflow: hidden;
+
         }
 
         /* 加载中状态 */
@@ -80,8 +84,9 @@
         /* 代码块样式 */
         .code-content {
             margin: 0;
-            color: #d2a8ff; //  代码高亮色
-            font-family: "Fira Code", monospace;
+            padding: 20px;
+            color: #d4d4d4;
+            font-family: "Fira Code", "Consolas", monospace;
             font-size: 14px;
             line-height: 1.6;
             white-space: pre-wrap;

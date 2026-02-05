@@ -2,6 +2,11 @@ import React, { useState } from 'react'
 import { Card, Input, Button, Typography, Space, Tag, message, Empty, Spin } from 'antd'
 import { CopyOutlined, BulbOutlined, ThunderboltOutlined, CodeOutlined } from '@ant-design/icons'
 import { useAiAssistant } from '../../hooks/useAiAssistant'
+import { useTypewriter } from '../../hooks/useTypewriter'
+// 引入代码高亮组件
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
+// 引入一款类似 VS Code 的暗色主题 (vscDarkPlus)
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'
 
 // 引入样式文件
 import './TrackingCopilot.less'
@@ -12,6 +17,7 @@ const { Text } = Typography
 export const TrackingCopilot: React.FC = () => {
   const { copilot } = useAiAssistant()
   const [input, setInput] = useState('')
+  const typedCode = useTypewriter(copilot.result, 20)
 
   const suggestions = ['监控购买按钮点击', '分析首页停留时间', '追踪异常白屏']
 
@@ -80,7 +86,7 @@ export const TrackingCopilot: React.FC = () => {
           </span>
         }
         extra={
-          copilot.result && (
+          typedCode && (
             <Button
               type="link"
               icon={<CopyOutlined />}
@@ -95,15 +101,29 @@ export const TrackingCopilot: React.FC = () => {
         <div className="code-viewport">
           {copilot.isLoading ? (
             <div className="loading-spin">
-              <Spin tip="AI 正在构思代码..." />
+              <Spin tip="AI 正在构建埋点方案..." />
             </div>
-          ) : copilot.result ? (
-            <pre className="code-content">{copilot.result}</pre>
+          ) : typedCode ? (
+            <SyntaxHighlighter
+              language="typescript"
+              style={vscDarkPlus}
+              customStyle={{
+                margin: 0,
+                padding: '20px',
+                borderRadius: '8px',
+                fontSize: '14px',
+                backgroundColor: 'transparent',
+                minHeight: '100%',
+              }}
+              showLineNumbers={true}
+            >
+              {typedCode}
+            </SyntaxHighlighter>
           ) : (
             <Empty
               className="empty-state"
               image={Empty.PRESENTED_IMAGE_SIMPLE}
-              description="在左侧输入需求，点击生成"
+              description="在左侧输入需求，AI 将为您生成代码"
             />
           )}
         </div>

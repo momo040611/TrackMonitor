@@ -52,8 +52,11 @@
   color: #79c0ff;
 }
 .tracking-copilot-container .preview-card .code-viewport {
-  min-height: 300px;
+  min-height: 350px;
   position: relative;
+  background: #1e1e1e;
+  border-radius: 8px;
+  overflow: hidden;
 }
 .tracking-copilot-container .preview-card .loading-spin {
   position: absolute;
@@ -67,8 +70,9 @@
 }
 .tracking-copilot-container .preview-card .code-content {
   margin: 0;
-  color: #d2a8ff;
-  font-family: "Fira Code", monospace;
+  padding: 20px;
+  color: #d4d4d4;
+  font-family: "Fira Code", "Consolas", monospace;
   font-size: 14px;
   line-height: 1.6;
   white-space: pre-wrap;
