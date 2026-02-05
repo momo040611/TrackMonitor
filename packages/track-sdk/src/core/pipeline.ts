@@ -20,8 +20,8 @@ export class Pipeline {
             if (plugin.onEvent) {
                 try {
                     plugin.onEvent(event, this.context);
-                } catch {
-                    // 插件内部错误隔离，避免影响主流程
+                } catch (e) {
+                    console.error('[SDK Error] Plugin execution failed:', e);
                 }
             }
         }
