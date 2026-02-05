@@ -1,16 +1,31 @@
-import React, { useState } from 'react'
-import { Card, Button, Typography, Tag, Space, Empty } from 'antd'
-import { IndentedTree } from '@ant-design/graphs'
+import React, { useState, useEffect, useRef } from 'react'
+import {
+  Card,
+  Button,
+  Typography,
+  Tag,
+  Space,
+  Empty,
+  Drawer,
+  Timeline,
+  Descriptions,
+  Progress,
+} from 'antd'
 import {
   AimOutlined,
   SearchOutlined,
   DeploymentUnitOutlined,
   WarningOutlined,
+  FileTextOutlined,
+  ClockCircleOutlined,
+  RightOutlined,
+  CodeOutlined,
 } from '@ant-design/icons'
 import './RootCauseAnalysis.less'
 
 const { Title, Text } = Typography
 
+// 数据接口定义
 interface RootCauseResult {
   dimension: string
   value: string
@@ -19,9 +34,28 @@ interface RootCauseResult {
   type?: 'infrastructure' | 'business' | 'client'
 }
 
+interface DetailLog {
+  id: string
+  time: string
+  level: 'ERROR' | 'WARN'
+  message: string
+  stack?: string
+}
+
 export const RootCauseAnalysis: React.FC = () => {
   const [loading, setLoading] = useState(false)
   const [results, setResults] = useState<RootCauseResult[]>([])
+
+  const [drawerVisible, setDrawerVisible] = useState(false)
+  const [selectedNode, setSelectedNode] = useState<RootCauseResult | null>(null)
+  const [detailLogs, setDetailLogs] = useState<DetailLog[]>([])
+
+  // 1. 定义 Refs 来获取 DOM 元素的位置
+  const containerRef = useRef<HTMLDivElement>(null)
+  const rootNodeRef = useRef<HTMLDivElement>(null)
+  const itemRefs = useRef<(HTMLDivElement | null)[]>([])
+  // 存储计算好的连线路径
+  const [svgPaths, setSvgPaths] = useState<string[]>([])
 
   const handleAnalyze = async () => {
     setLoading(true)
@@ -71,36 +105,77 @@ export const RootCauseAnalysis: React.FC = () => {
         description: '特定系统版本兼容性问题',
       },
     ]
-    const sortedResults = mockResponse.sort((a, b) => b.score - a.score)
-    setResults(sortedResults)
+    setResults(mockResponse.sort((a, b) => b.score - a.score))
     setLoading(false)
   }
 
-  const dynamicHeight = Math.min(Math.max(results.length * 80, 300), 800)
+  // 动态计算连线
+  useEffect(() => {
+    // 确保有数据且 ref 已经挂载
+    if (results.length === 0 || !containerRef.current || !rootNodeRef.current) return
 
-  // 样式定义
-  const cardStyle = {
-    fill: '#e6f7ff',
-    stroke: '#1890ff',
-    radius: 4,
-    lineWidth: 1,
-    cursor: 'pointer',
-  }
+    const calculatePaths = () => {
+      const containerRect = containerRef.current!.getBoundingClientRect()
+      const rootRect = rootNodeRef.current!.getBoundingClientRect()
 
-  const highRiskStyle = {
-    ...cardStyle,
-    fill: '#fff1f0',
-    stroke: '#ff4d4f',
+      // 计算起点：根节点的右侧中心 (相对于 container)
+      const startX = rootRect.right - containerRect.left
+      const startY = rootRect.top + rootRect.height / 2 - containerRect.top
+
+      const newPaths = results.map((_, index) => {
+        const itemEl = itemRefs.current[index]
+        if (!itemEl) return ''
+
+        const itemRect = itemEl.getBoundingClientRect()
+        // 计算终点：子节点的左侧中心
+        const endX = itemRect.left - containerRect.left
+        const endY = itemRect.top + itemRect.height / 2 - containerRect.top
+
+        // 生成贝塞尔曲线
+        // M 起点 C 控制点1 控制点2 终点
+        // 这里简单的取中点作为控制点 X 坐标
+        const controlPointX = (startX + endX) / 2
+
+        return `M ${startX},${startY} C ${controlPointX},${startY} ${controlPointX},${endY} ${endX},${endY}`
+      })
+      setSvgPaths(newPaths)
+    }
+
+    // 延迟确保 DOM 渲染完成
+    const timer = setTimeout(calculatePaths, 100)
+    // 监听窗口缩放，重新画线
+    window.addEventListener('resize', calculatePaths)
+
+    return () => {
+      clearTimeout(timer)
+      window.removeEventListener('resize', calculatePaths)
+    }
+  }, [results, drawerVisible]) // 依赖 results 变化时重新计算
+
+  const handleItemClick = (item: RootCauseResult) => {
+    setSelectedNode(item)
+    const mockLogs: DetailLog[] = Array.from({ length: 5 }).map((_, i) => ({
+      id: `err-${i}`,
+      time: `2026-02-04 14:${30 + i}:${15 + i}`,
+      level: 'ERROR',
+      message:
+        item.type === 'client'
+          ? `Uncaught Exception in ${item.value}: NullPointerException`
+          : `TimeoutException: Connection to ${item.value} timed out`,
+      stack: `at com.example.service.OrderService.create(OrderService.java:42)\n   at com.example.controller.OrderController.submit(OrderController.java:108)`,
+    }))
+    setDetailLogs(mockLogs)
+    setDrawerVisible(true)
   }
 
   return (
     <div className="root-cause-container">
-      {/* 左侧：结果列表（增加滚动条） */}
+      {/* 左侧：列表 */}
       <Card
         className="analysis-card"
         title={
           <span>
-            <AimOutlined /> 根因定位控制台 ({results.length})
+            <AimOutlined /> 根因定位控制台
           </span>
         }
       >
@@ -116,47 +191,42 @@ export const RootCauseAnalysis: React.FC = () => {
             {results.length > 0 ? '重新诊断' : '开始全链路归因分析'}
           </Button>
         </div>
-
-        <div
-          className="result-list"
-          style={{ maxHeight: '500px', overflowY: 'auto', paddingRight: 4 }}
-        >
+        <div className="result-list" style={{ overflowY: 'auto' }}>
           {results.length > 0
             ? results.map((item, index) => (
                 <div
                   key={index}
-                  className={`suspect-item ${item.score < 60 ? 'low-risk' : ''}`}
-                  style={{ opacity: item.score < 60 ? 0.6 : 1 }}
+                  className="suspect-item"
+                  onClick={() => handleItemClick(item)}
+                  style={{ cursor: 'pointer' }}
                 >
-                  <div className="suspect-info">
-                    <Space>
-                      <Tag color={item.score > 80 ? 'red' : item.score > 60 ? 'orange' : 'default'}>
-                        {item.dimension}
-                      </Tag>
-                      <h4 style={{ margin: 0 }}>{item.value}</h4>
-                    </Space>
-                    <p style={{ margin: '4px 0 0', fontSize: 12, color: '#666' }}>
-                      {item.description}
-                    </p>
-                  </div>
-                  <div style={{ textAlign: 'right', minWidth: 60 }}>
+                  <Space>
+                    <Tag color={item.score > 80 ? 'red' : 'orange'}>{item.dimension}</Tag>
+                    <span style={{ fontWeight: 500 }}>{item.value}</span>
+                  </Space>
+                  <div
+                    style={{
+                      marginTop: 4,
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      fontSize: 12,
+                      color: '#999',
+                    }}
+                  >
+                    <span>{item.description}</span>
                     <span
-                      style={{
-                        color: item.score > 80 ? '#ff4d4f' : '#faad14',
-                        fontWeight: 'bold',
-                        fontSize: 16,
-                      }}
+                      style={{ color: item.score > 80 ? '#ff4d4f' : '#faad14', fontWeight: 'bold' }}
                     >
-                      {item.score}
+                      {item.score}分 <RightOutlined />
                     </span>
-                    <div style={{ fontSize: 10, color: '#999' }}>分</div>
                   </div>
                 </div>
               ))
             : !loading && <Empty description="暂无异常" />}
         </div>
       </Card>
-      {/* 右侧：拓扑可视化 */}
+
+      {/* 右侧：纯 React 实现的拓扑图 */}
       <Card
         className="analysis-card"
         title={
@@ -167,84 +237,89 @@ export const RootCauseAnalysis: React.FC = () => {
         bodyStyle={{ padding: 0 }}
       >
         {results.length > 0 ? (
-          <div style={{ padding: 20 }}>
-            {/* 保持高度，确保画布可见 */}
-            <div style={{ height: 500, width: '100%' }}>
-              <IndentedTree
-                data={{
-                  id: 'root',
-                  // 针对不同的内部实现，同时提供 title, name, label
-                  label: `异常总集\n(N=${results.length})`,
-                  title: `异常总集\n(N=${results.length})`,
-                  name: `异常总集\n(N=${results.length})`,
-
-                  // 强制指定形状和样式
-                  type: 'rect',
-                  style: { fill: '#333', stroke: '#000', radius: 4 },
-                  labelCfg: { style: { fill: '#fff', fontSize: 14, fontWeight: 'bold' } },
-
-                  children: results.map((item, index) => ({
-                    id: `node-${index}`,
-                    // 同样全字段覆盖
-                    label: `${item.dimension}\n${item.value}`,
-                    title: `${item.dimension}\n${item.value}`,
-                    name: `${item.dimension}\n${item.value}`,
-
-                    // 形状与颜色
-                    type: 'rect',
-                    style:
-                      item.score > 80
-                        ? {
-                            fill: '#fff1f0',
-                            stroke: '#ff4d4f',
-                            radius: 4,
-                            lineWidth: 1,
-                          }
-                        : {
-                            fill: '#e6f7ff',
-                            stroke: '#1890ff',
-                            radius: 4,
-                            lineWidth: 1,
-                          },
-                    // 文字样式
-                    labelCfg: {
-                      style: {
-                        fill: item.score > 80 ? '#cf1322' : '#000',
-                        fontSize: 12,
-                        fontWeight: item.score > 80 ? 'bold' : 'normal',
-                      },
-                    },
-                  })),
+          <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+            {/* 3. 绑定 containerRef */}
+            <div className="topology-viewport" ref={containerRef}>
+              {/* SVG 连线层 */}
+              <svg
+                className="connections-layer"
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  height: '100%',
+                  pointerEvents: 'none',
+                  zIndex: 1,
                 }}
-                // 布局与交互
-                autoFit="view"
-                behaviors={['drag-canvas', 'zoom-canvas', 'drag-node']}
-                layout={{
-                  type: 'indented',
-                  direction: 'LR',
-                  dropCap: false,
-                  indent: 250, // 增加横向间距
-                  getHeight: () => 80, // 增加纵向间距，防止重叠
-                  getWidth: () => 220, // 显式给一个宽度提示
-                }}
-              />
+              >
+                {svgPaths.map((d, i) => (
+                  <path
+                    key={i}
+                    d={d}
+                    fill="none"
+                    stroke={results[i]?.score > 80 ? '#ffccc7' : '#e8e8e8'}
+                    strokeWidth="2"
+                  />
+                ))}
+              </svg>
+
+              {/* 1. 根节点：绑定 rootNodeRef */}
+              <div className="root-node" ref={rootNodeRef}>
+                异常总集
+                <br />
+                (N={results.length})
+              </div>
+
+              {/* 2. 子节点列表 */}
+              <div className="leaf-nodes-column">
+                {results.map((item, index) => (
+                  <div
+                    key={index}
+                    ref={(el) => {
+                      itemRefs.current[index] = el
+                    }}
+                    className={`leaf-node-card ${item.score > 80 ? 'high-risk' : ''}`}
+                    onClick={() => handleItemClick(item)}
+                  >
+                    <div className="score-badge">{item.score}%</div>
+                    <Text type="secondary" style={{ fontSize: 12 }}>
+                      {item.dimension}
+                    </Text>
+                    <h4>{item.value}</h4>
+
+                    {/* 左侧的小连接点装饰 */}
+                    <div
+                      style={{
+                        position: 'absolute',
+                        left: -5,
+                        top: '50%',
+                        marginTop: -3,
+                        width: 6,
+                        height: 6,
+                        borderRadius: '50%',
+                        background: item.score > 80 ? '#ff4d4f' : '#1890ff',
+                      }}
+                    />
+                  </div>
+                ))}
+              </div>
             </div>
 
+            {/* 底部结论 */}
             <div
               style={{
-                marginTop: 20,
+                margin: 20,
                 padding: 16,
                 background: '#fff2f0',
                 borderRadius: 8,
                 border: '1px solid #ffccc7',
               }}
             >
-              <Title level={5} type="danger">
+              <Title level={5} type="danger" style={{ marginTop: 0 }}>
                 <WarningOutlined /> AI 综合排查结论：
               </Title>
               <Text>
-                系统检测到 <b>{results.length}</b> 个异常特征。
-                <br />
                 核心根因指向 <b>App版本 (2.4.0-beta)</b> 和 <b>数据库 (CPU过高)</b>。
               </Text>
             </div>
@@ -252,17 +327,84 @@ export const RootCauseAnalysis: React.FC = () => {
         ) : (
           <div
             className="chart-area"
-            style={{
-              height: 300,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
+            style={{ height: 300, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           >
             <Text type="secondary">暂无数据</Text>
           </div>
         )}
       </Card>
+
+      {/* 详情抽屉 */}
+      <Drawer
+        title={
+          <span>
+            <FileTextOutlined /> 根因证据链分析
+          </span>
+        }
+        width={500}
+        onClose={() => setDrawerVisible(false)}
+        open={drawerVisible}
+      >
+        {selectedNode && (
+          <div>
+            <Card
+              type="inner"
+              style={{
+                background: selectedNode.score > 80 ? '#fff1f0' : '#f0f5ff',
+                marginBottom: 24,
+                border: 'none',
+              }}
+            >
+              <Descriptions column={1}>
+                <Descriptions.Item label="疑似根因">
+                  <Text strong style={{ fontSize: 16 }}>
+                    {selectedNode.value}
+                  </Text>
+                </Descriptions.Item>
+                <Descriptions.Item label="归因维度">
+                  <Tag>{selectedNode.dimension}</Tag>
+                </Descriptions.Item>
+                <Descriptions.Item label="置信度">
+                  <Progress
+                    percent={selectedNode.score}
+                    status={selectedNode.score > 80 ? 'exception' : 'active'}
+                  />
+                </Descriptions.Item>
+                <Descriptions.Item label="AI 描述">{selectedNode.description}</Descriptions.Item>
+              </Descriptions>
+            </Card>
+            <Title level={5}>
+              <ClockCircleOutlined /> 异常时序分布
+            </Title>
+            <Timeline style={{ marginTop: 20 }}>
+              {detailLogs.map((log) => (
+                <Timeline.Item key={log.id} color="red">
+                  <Text strong>{log.time.split(' ')[1]}</Text>
+                  <div style={{ fontSize: 12, color: '#666', fontFamily: 'monospace' }}>
+                    {log.message}
+                  </div>
+                </Timeline.Item>
+              ))}
+            </Timeline>
+            <Title level={5} style={{ marginTop: 20 }}>
+              <CodeOutlined /> 堆栈采样
+            </Title>
+            <div
+              style={{
+                background: '#1e1e1e',
+                padding: 12,
+                borderRadius: 6,
+                color: '#d4d4d4',
+                fontSize: 12,
+                fontFamily: 'monospace',
+                overflowX: 'auto',
+              }}
+            >
+              {detailLogs[0]?.stack || 'No stack trace available.'}
+            </div>
+          </div>
+        )}
+      </Drawer>
     </div>
   )
 }
