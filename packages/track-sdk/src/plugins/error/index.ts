@@ -73,8 +73,8 @@ export function createErrorPlugin(options: ErrorPluginOptions = {}): ErrorPlugin
   let errorCount = 0
   let enabled = true
   let removeHandlers: Array<() => void> = []
-  let trackerInstance: any = null
-
+  let trackerInstance: any = options.tracker || null
+  
   const handleError = (
     errorType: ErrorType,
     error: Error | ErrorEvent | PromiseRejectionEvent | Event | any,
@@ -251,7 +251,9 @@ export function createErrorPlugin(options: ErrorPluginOptions = {}): ErrorPlugin
         typeof trackerInstance === 'object' &&
         typeof trackerInstance.track === 'function'
       ) {
-        trackerInstance.track('error', errorInfo)
+        const eventName = `error_${errorInfo.type}`;
+       
+        trackerInstance.track(`error_${errorInfo.type}`, errorInfo)
       }
     } catch (err) {
       console.error('[track-sdk] 上报错误时发生异常:', err)
@@ -309,18 +311,16 @@ export function createErrorPlugin(options: ErrorPluginOptions = {}): ErrorPlugin
   return {
     name: 'error',
     setup(context: CoreContext) {
-      try {
-        // 保存tracker实例引用
-        if (context && typeof context === 'object') {
+     try {
+        // 如果 options 没传 tracker，才尝试从 context 里找 
+        if (!trackerInstance && context && typeof context === 'object') {
           const ctx = context as Record<string, any>
           if (ctx.tracker) {
             trackerInstance = ctx.tracker
           }
         }
 
-        // 安装错误监听器
         installErrorHandlers()
-
         console.log('[track-sdk] 错误监控插件初始化完成')
       } catch (err) {
         console.error('[track-sdk] 错误监控插件初始化失败:', err)

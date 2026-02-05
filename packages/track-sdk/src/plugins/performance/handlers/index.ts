@@ -1,14 +1,14 @@
 import type { PerformanceHandler } from "../types";
-import { PageLoadMetricsHandler } from "./page-load-metrics";
+import { initPageLoadMetrics } from "./page-load-metrics"; 
 import { createResourceMetricsHandler } from "./resource-metrics";
 
 export interface HandlerManagerOptions {
-    enablePageLoadMetrics?: boolean;  // 是否启用页面加载性能监控
-    enableResourceMetrics?: boolean;  // 是否启用资源性能监控
+    enablePageLoadMetrics?: boolean;
+    enableResourceMetrics?: boolean;
 }
 
 export class HandlerManager {
-    private handlers: PerformanceHandler[] = []; //handlers: 存储所有性能监控处理器的数组
+    private handlers: PerformanceHandler[] = [];
 
     constructor(options: HandlerManagerOptions = {}) {
         const {
@@ -16,7 +16,6 @@ export class HandlerManager {
             enableResourceMetrics = true,
         } = options;
 
-        // 注册处理器
         if (enablePageLoadMetrics) {
             this.registerHandler(createPageLoadMetricsHandler());
         }
@@ -26,41 +25,45 @@ export class HandlerManager {
         }
     }
 
-    /**
-     * 注册处理器
-     */
     registerHandler(handler: PerformanceHandler): void {
-        this.handlers.push(handler); // 注册性能监控处理器,添加到 handlers 数组中
+        this.handlers.push(handler);
     }
 
-    /**
-     * 初始化所有处理器
-     */
     init(context: any): void {
         this.handlers.forEach(handler => {
-            handler.init?.(context);  // 初始化处理器,调用处理器的 init 方法(有init方法就调用它)
+            handler.init?.(context);
         });
     }
 
-    /**
-     * 获取所有处理器
-     */
     getHandlers(): PerformanceHandler[] {
-        return this.handlers; // 返回当前实例中存储的处理器数组
+        return this.handlers;
     }
 }
 
 export function createHandlerManager(options?: HandlerManagerOptions): HandlerManager {
-    return new HandlerManager(options);   // 创建并返回 HandlerManager 实例,使用实例更简单
+    return new HandlerManager(options);
 }
 
-
-
-
+// ✅ 修复：实现页面加载性能处理器
 function createPageLoadMetricsHandler(): PerformanceHandler {
-    throw new Error("Function not implemented.");
+    return {
+        name: 'page-load-metrics',
+        // 为了满足接口定义的占位属性（如果有的话）
+        processResourceEntries: undefined, 
+        
+        init(context: any) {
+            // 调用 page-load-metrics.ts 里的初始化函数
+            initPageLoadMetrics((metricType, metrics, metadata) => {
+                // 当采集到性能数据时，通过 context.send 发送给 PerformanceMonitor
+                if (context && context.send) {
+                    context.send({
+                        type: metricType,
+                        name: 'page_load', // 指标名称
+                        metrics: metrics,  // 具体数值 (FCP, LCP 等)
+                        metadata: metadata
+                    });
+                }
+            });
+        }
+    };
 }
-// - 创建了 HandlerManager 类来管理所有性能处理器
-// - 提供了处理器注册、初始化和获取的方法
-// - 支持通过配置选项启用或禁用特定类型的处理器
-// - 作为一个容器，将不同类型的处理器整合在一起，方便性能监控器统一管理

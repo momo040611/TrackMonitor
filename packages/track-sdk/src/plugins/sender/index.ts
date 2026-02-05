@@ -45,11 +45,13 @@ export class SenderPlugin implements TrackerPlugin {
 
   onEvent(event: TrackerEvent, context: CoreContext) {
     const eventWithContext = { ...event, ...context };
-
+    
     // 错误事件立即发送
     if (event.type.startsWith('error_')) {
+      
       this.sendData([eventWithContext]);
     } else {
+      
       this.enqueue(eventWithContext);
     }
   }

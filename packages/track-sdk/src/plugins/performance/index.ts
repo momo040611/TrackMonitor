@@ -206,13 +206,15 @@ export class PerformanceMonitor {
  */
 export class PerformancePlugin implements TrackerPlugin {
   private monitor: PerformanceMonitor;
+  private tracker: any;
 
   /**
    * 创建性能监控插件
    * @param options 性能监控配置选项
    */
-  constructor(options: PerformancePluginOptions = {}) {
+  constructor(options: PerformancePluginOptions & { tracker: any }) {
     this.monitor = new PerformanceMonitor(options);
+    this.tracker = options.tracker;
   }
 
   /**
@@ -226,13 +228,12 @@ export class PerformancePlugin implements TrackerPlugin {
    * 插件初始化
    * @param tracker 跟踪器实例
    */
-  public setup(tracker: any): void {
-    // 添加数据处理器，将性能数据发送到跟踪器
+  public setup(context: any): void {
     this.monitor.addHandler((data) => {
-      tracker.send(data);
+      if (this.tracker && this.tracker.track) {
+        this.tracker.track('performance_metric', data);
+      }
     });
-
-    // 启动性能监控
     this.monitor.start();
   }
 
@@ -258,7 +259,7 @@ export class PerformancePlugin implements TrackerPlugin {
  * @param options 性能监控配置选项
  * @returns 性能监控插件
  */
-export function createPerformancePlugin(options: PerformancePluginOptions = {}): TrackerPlugin {
+export function createPerformancePlugin(options: PerformancePluginOptions & { tracker: any }): TrackerPlugin {
   return new PerformancePlugin(options);
 }
 
