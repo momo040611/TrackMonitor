@@ -7,20 +7,33 @@ export function initPromiseError(
     metadata?: Record<string, any>
   ) => void
 ): () => void {
+  // 检查浏览器环境
+  if (typeof window === 'undefined' || typeof window.location === 'undefined') {
+    return () => {}
+  }
+
   const rejectionHandler = (event: PromiseRejectionEvent): void => {
-    event.preventDefault()
+    try {
+      event.preventDefault()
 
-    const metadata = {
-      timestamp: Date.now(),
-      url: window.location.href,
+      const metadata = {
+        timestamp: Date.now(),
+        url: window.location.href,
+      }
+
+      callback(ErrorType.PROMISE, event, metadata)
+    } catch (err) {
+      console.error('[track-sdk] 处理Promise错误时发生异常:', err)
     }
-
-    callback(ErrorType.PROMISE, event, metadata)
   }
 
   window.addEventListener('unhandledrejection', rejectionHandler)
 
   return () => {
-    window.removeEventListener('unhandledrejection', rejectionHandler)
+    try {
+      window.removeEventListener('unhandledrejection', rejectionHandler)
+    } catch (err) {
+      console.error('[track-sdk] 移除Promise错误监听器时发生异常:', err)
+    }
   }
 }
