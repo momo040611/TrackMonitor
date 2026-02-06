@@ -4,7 +4,14 @@ import { TrackingCopilot } from './components/TrackingCopilot/TrackingCopilot'
 import { LogParser } from './components/LogParser/LogParser'
 import { AnomalyDiagnosis } from './components/AnomalyDiagnosis/AnomalyDiagnosis'
 import { RootCauseAnalysis } from './components/RootCauseAnalysis/RootCauseAnalysis'
-import { CodeOutlined, BugOutlined, FileTextOutlined, AimOutlined } from '@ant-design/icons'
+import { SmartDispatch } from './components/SmartDispatch/SmartDispathc'
+import {
+  CodeOutlined,
+  BugOutlined,
+  FileTextOutlined,
+  AimOutlined,
+  PartitionOutlined,
+} from '@ant-design/icons'
 import './SmartHall.less'
 
 const { Title, Paragraph } = Typography
@@ -47,6 +54,15 @@ const SmartHall: React.FC = () => {
         </span>
       ),
       children: <RootCauseAnalysis />,
+    },
+    {
+      key: '5',
+      label: (
+        <span>
+          <PartitionOutlined /> 智能分派
+        </span>
+      ),
+      children: <SmartDispatch />,
     },
   ]
 
