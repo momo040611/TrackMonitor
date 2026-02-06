@@ -11,6 +11,7 @@ import {
   Drawer,
   Typography,
   message,
+  Space,
 } from 'antd'
 import {
   BugOutlined,
@@ -19,10 +20,15 @@ import {
   ReloadOutlined,
   RobotOutlined,
   FileTextOutlined,
+  ExportOutlined,
 } from '@ant-design/icons'
 import './AnomalyDiagnosis.less'
 
 const { Title, Paragraph, Text } = Typography
+
+interface Props {
+  onDispatch?: (content: string) => void
+}
 
 interface DiagnosisItem {
   id: string
@@ -34,12 +40,30 @@ interface DiagnosisItem {
   score_impact: number
 }
 
-export const AnomalyDiagnosis: React.FC = () => {
+export const AnomalyDiagnosis: React.FC<Props> = ({ onDispatch }) => {
   const [analyzing, setAnalyzing] = useState(false)
   const [healthScore, setHealthScore] = useState(100)
   const [issues, setIssues] = useState<DiagnosisItem[]>([])
   const [drawerVisible, setDrawerVisible] = useState(false)
   const [currentIssue, setCurrentIssue] = useState<DiagnosisItem | null>(null)
+
+  //处理跳转逻辑
+  const handleToDispatch = () => {
+    if (!currentIssue || !onDispatch) return
+
+    // 自动组装成一段清晰的任务描述
+    const taskContext = `
+【异常转工单】${currentIssue.title}
+-------------------------
+[级别] ${currentIssue.level.toUpperCase()}
+[影响范围] ${currentIssue.affected_scope || '未知'}
+[异常描述] ${currentIssue.description}
+[AI 建议] ${currentIssue.suggestion}
+      `.trim()
+
+    onDispatch(taskContext)
+    message.loading('正在同步上下文至分派台...', 0.5)
+  }
 
   const startDiagnosis = async () => {
     try {
@@ -238,7 +262,28 @@ export const AnomalyDiagnosis: React.FC = () => {
               </div>
             )}
 
-            <Card type="inner" title="🤖 AI 修复建议" className="suggestion-card">
+            <Card
+              type="inner"
+              title={
+                <Space>
+                  <RobotOutlined /> AI 修复建议
+                </Space>
+              }
+              className="suggestion-card"
+              actions={[
+                <Button
+                  key="dispatch"
+                  type="primary"
+                  size="small"
+                  ghost
+                  icon={<ExportOutlined />}
+                  onClick={handleToDispatch}
+                  disabled={!onDispatch}
+                >
+                  转人工分派
+                </Button>,
+              ]}
+            >
               <Paragraph style={{ marginBottom: 0 }}>{currentIssue.suggestion}</Paragraph>
             </Card>
 

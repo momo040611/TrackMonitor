@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { Tabs, Typography } from 'antd'
 import { TrackingCopilot } from './components/TrackingCopilot/TrackingCopilot'
 import { LogParser } from './components/LogParser/LogParser'
@@ -17,6 +17,16 @@ import './SmartHall.less'
 const { Title, Paragraph } = Typography
 
 const SmartHall: React.FC = () => {
+  //  管理当前激活的 Tab
+  const [activeTab, setActiveTab] = useState('2')
+  // 用于在模块间传递的任务数据
+  const [dispatchTask, setDispatchTask] = useState<string>('')
+
+  const handleGoToDispatch = (issueContent: string) => {
+    setDispatchTask(issueContent)
+    setActiveTab('5')
+  }
+
   const items = [
     {
       key: '1',
@@ -35,7 +45,7 @@ const SmartHall: React.FC = () => {
           <BugOutlined /> 异常诊断
         </span>
       ),
-      children: <AnomalyDiagnosis />,
+      children: <AnomalyDiagnosis onDispatch={handleGoToDispatch} />,
     },
     {
       key: '3',
@@ -62,7 +72,7 @@ const SmartHall: React.FC = () => {
           <PartitionOutlined /> 智能分派
         </span>
       ),
-      children: <SmartDispatch />,
+      children: <SmartDispatch initialTask={dispatchTask} />,
     },
   ]
 
@@ -74,7 +84,12 @@ const SmartHall: React.FC = () => {
       </div>
 
       <div className="tabs-wrapper">
-        <Tabs defaultActiveKey="1" items={items} size="large" />
+        <Tabs
+          activeKey={activeTab}
+          onChange={setActiveTab} // 允许手动切换
+          items={items}
+          size="large"
+        />
       </div>
     </div>
   )

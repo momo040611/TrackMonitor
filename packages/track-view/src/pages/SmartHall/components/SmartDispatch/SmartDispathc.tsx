@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   Card,
   Input,
@@ -29,6 +29,11 @@ import {
 import './SmartDispatch.less'
 
 const { TextArea } = Input
+
+//  定义 Props
+interface Props {
+  initialTask?: string
+}
 
 // 定义开发者模型
 interface Developer {
@@ -76,11 +81,21 @@ const MOCK_DEVS: Developer[] = [
   },
 ]
 
-export const SmartDispatch: React.FC = () => {
+export const SmartDispatch: React.FC<Props> = ({ initialTask }) => {
   const [loading, setLoading] = useState(false)
   const [taskDesc, setTaskDesc] = useState('')
   const [candidates, setCandidates] = useState<Developer[]>([])
   const [analyzedTags, setAnalyzedTags] = useState<string[]>([])
+
+  //  监听 initialTask 的变化
+  useEffect(() => {
+    if (initialTask) {
+      setTaskDesc(initialTask)
+      setTimeout(() => {
+        message.info('已自动导入异常上下文，请点击开始分派')
+      }, 500)
+    }
+  }, [initialTask])
 
   // 模拟 AI 分派逻辑
   const handleDispatch = () => {
