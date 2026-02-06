@@ -1,0 +1,104 @@
+.smart-dispatch-container {
+    height: 100%;
+
+    /* 让卡片撑满高度 */
+    .ant-row,
+    .ant-col {
+        height: 100%;
+    }
+
+    .input-card,
+    .result-card {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+
+        .ant-card-body {
+            flex: 1;
+            overflow-y: auto;
+        }
+    }
+
+    .input-wrapper {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+
+        .quick-tags {
+            margin-bottom: 24px;
+
+            .ant-tag {
+                cursor: pointer;
+                padding: 4px 12px;
+                border-radius: 12px;
+                margin-bottom: 8px;
+
+                &:hover {
+                    color: #1890ff;
+                    border-color: #1890ff;
+                }
+            }
+        }
+    }
+
+    .candidates-list {
+        .best-match {
+            background: linear-gradient(135deg, #f0f5ff 0%, #e6f7ff 100%);
+            border: 1px solid #adc6ff;
+            border-radius: 12px;
+            padding: 24px;
+            position: relative;
+            margin-bottom: 24px;
+
+            .match-badge {
+                position: absolute;
+                top: 0;
+                right: 0;
+                background: #ff4d4f;
+                color: #fff;
+                padding: 4px 12px;
+                border-bottom-left-radius: 12px;
+                border-top-right-radius: 12px;
+                font-size: 12px;
+                font-weight: bold;
+            }
+
+            .best-info {
+                display: flex;
+                align-items: center;
+                gap: 24px;
+                margin-bottom: 16px;
+
+                .info-text {
+                    flex: 1;
+                }
+            }
+
+            .reason-box {
+                background: rgba(255, 255, 255, 0.6);
+                padding: 12px;
+                border-radius: 8px;
+                margin-bottom: 16px;
+                color: #595959;
+                font-size: 13px;
+            }
+        }
+
+        .others-title {
+            font-weight: bold;
+            margin-bottom: 12px;
+            color: #333;
+            border-left: 3px solid #d9d9d9;
+            padding-left: 8px;
+        }
+
+        .dev-meta {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+        }
+    }
+}

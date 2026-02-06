@@ -1,49 +1,43 @@
-import type { TrackerPlugin } from "../../core";
-import type { TrackerEvent, CoreContext } from "../../core/types";
-import { createPerformanceMonitor } from "./PerformanceMonitor";
+import type { TrackerPlugin } from '../../core'
+import type { TrackerEvent, CoreContext } from '../../core/types'
+import { createPerformanceMonitor } from './PerformanceMonitor'
 
 export interface PerformancePluginOptions {
-    enablePageLoadMetrics?: boolean;
-    enableResourceMetrics?: boolean;
-    sampleRate?: number; // 采样率（0-1）
+  enablePageLoadMetrics?: boolean
+  enableResourceMetrics?: boolean
+  sampleRate?: number // 采样率（0-1）
 }
 
 export function createPerformancePlugin(options: PerformancePluginOptions = {}): TrackerPlugin {
-    const {
-        enablePageLoadMetrics = true,
-        enableResourceMetrics = true,
-        sampleRate = 1,
-    } = options;
+  const { enablePageLoadMetrics = true, enableResourceMetrics = true, sampleRate = 1 } = options
 
-    const monitor = createPerformanceMonitor({
-        enablePageLoadMetrics,
-        enableResourceMetrics,
-    });
+  const monitor = createPerformanceMonitor({
+    enablePageLoadMetrics,
+    enableResourceMetrics,
+  })
 
-    return {
-        name: "performance",
+  return {
+    name: 'performance',
 
-        setup(context: CoreContext): void {
-            // 检查采样率
-            if (Math.random() > sampleRate) {
-                return;
-            }
+    setup(context: CoreContext): void {
+      // 检查采样率
+      if (Math.random() > sampleRate) {
+        return
+      }
 
-            // 初始化性能监控
-            monitor.init(context);
-        },
+      // 初始化性能监控
+      monitor.init(context)
+    },
 
-        onEvent(event: TrackerEvent, context: CoreContext): void {
-            // 处理性能相关事件
-            if (event.type.startsWith("performance:")) {
-                // 可以在这里添加额外的处理逻辑
-                console.log("Performance event:", event);
-            }
-        },
-    };
+    onEvent(event: TrackerEvent, context: CoreContext): void {
+      // 处理性能相关事件
+      if (event.type.startsWith('performance:')) {
+        // 可以在这里添加额外的处理逻辑
+        console.log('Performance event:', event)
+      }
+    },
+  }
 }
-
-
 
 /**
 代码说明 ：

@@ -56,7 +56,7 @@ export function createBehaviorPlugin(options: BehaviorPluginOptions): TrackerPlu
       }
     },
 
-    onEvent() { },
+    onEvent() {},
 
     cleanup() {
       cleanups.forEach((fn) => {

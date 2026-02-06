@@ -1,96 +1,93 @@
-import type { PerformanceHandler, ResourceTimingData } from "../types";
+import type { PerformanceHandler, ResourceTimingData } from '../types'
 // PerformanceHandler: 处理器接口类型   ResourceTimingData: 资源计时数据类型
 
 export interface ResourceMetricsHandlerOptions {
-    maxResources?: number;          // 最多监控多少个资源
-    slowResourceThreshold?: number; // 慢资源阈值（ms）
+  maxResources?: number // 最多监控多少个资源
+  slowResourceThreshold?: number // 慢资源阈值（ms）
 }
 
-export function createResourceMetricsHandler(options: ResourceMetricsHandlerOptions = {}): PerformanceHandler {
-    const {
-        maxResources = 100,
-        slowResourceThreshold = 2000,
-    } = options;
+export function createResourceMetricsHandler(
+  options: ResourceMetricsHandlerOptions = {}
+): PerformanceHandler {
+  const { maxResources = 100, slowResourceThreshold = 2000 } = options
 
-    let context: any = null;  // 添加 context 存储
+  let context: any = null // 添加 context 存储
 
-    return {
-        name: "resource-metrics",
-        
-        init(ctx: any): void {
-            context = ctx;  // 存储 context
-            
-            if (typeof window === "undefined" || !window.performance) {
-                return;
-            }
+  return {
+    name: 'resource-metrics',
 
-            if (window.PerformanceObserver) {
-                const self = this;
-                const observer = new PerformanceObserver((list) => {
-                    const resourceEntries = list.getEntriesByType("resource");
-                    self.processResourceEntries(resourceEntries);
-                });
+    init(ctx: any): void {
+      context = ctx // 存储 context
 
-                observer.observe({
-                    entryTypes: ["resource"],
-                });     
-            }
-        },
+      if (typeof window === 'undefined' || !window.performance) {
+        return
+      }
 
-        processResourceEntries(entries: PerformanceResourceTiming[]): void {
-            if (!context) {
-                return;
-            }
+      if (window.PerformanceObserver) {
+        const self = this
+        const observer = new PerformanceObserver((list) => {
+          const resourceEntries = list.getEntriesByType('resource')
+          self.processResourceEntries(resourceEntries)
+        })
 
-            const processedEntries = entries.slice(0, maxResources).map(entry => {
-                const resourceData: ResourceTimingData = {
-                    name: entry.name,
-                    initiatorType: entry.initiatorType,
-                    duration: entry.duration,
-                    fetchStart: entry.fetchStart,
-                    domainLookupStart: entry.domainLookupStart,
-                    domainLookupEnd: entry.domainLookupEnd,
-                    connectStart: entry.connectStart,
-                    connectEnd: entry.connectEnd,
-                    requestStart: entry.requestStart,
-                    responseStart: entry.responseStart,
-                    responseEnd: entry.responseEnd,
-                    isSlow: entry.duration > slowResourceThreshold,
-                };
+        observer.observe({
+          entryTypes: ['resource'],
+        })
+      }
+    },
 
-                resourceData.timings = {
-                    dns: entry.domainLookupEnd - entry.domainLookupStart,
-                    tcp: entry.connectEnd - entry.connectStart,
-                    ttfb: entry.responseStart - entry.requestStart,
-                    response: entry.responseEnd - entry.responseStart,
-                    total: entry.duration,
-                };
+    processResourceEntries(entries: PerformanceResourceTiming[]): void {
+      if (!context) {
+        return
+      }
 
-                return resourceData;
-            });
+      const processedEntries = entries.slice(0, maxResources).map((entry) => {
+        const resourceData: ResourceTimingData = {
+          name: entry.name,
+          initiatorType: entry.initiatorType,
+          duration: entry.duration,
+          fetchStart: entry.fetchStart,
+          domainLookupStart: entry.domainLookupStart,
+          domainLookupEnd: entry.domainLookupEnd,
+          connectStart: entry.connectStart,
+          connectEnd: entry.connectEnd,
+          requestStart: entry.requestStart,
+          responseStart: entry.responseStart,
+          responseEnd: entry.responseEnd,
+          isSlow: entry.duration > slowResourceThreshold,
+        }
 
-            if (processedEntries.length > 0) {
-                    context?.sendEvent?.("resource-metrics", {
-                    resources: processedEntries,
-                    totalResources: processedEntries.length,
-                    slowResources: processedEntries.filter(r => r.isSlow).length,
-                });
-            }
-        },
+        resourceData.timings = {
+          dns: entry.domainLookupEnd - entry.domainLookupStart,
+          tcp: entry.connectEnd - entry.connectStart,
+          ttfb: entry.responseStart - entry.requestStart,
+          response: entry.responseEnd - entry.responseStart,
+          total: entry.duration,
+        }
 
-        sendEvent(eventType: string, data: any): void {
-            if (context && context.send) {
-                context.send({
-                    type: eventType,
-                    data: data,
-                    timestamp: Date.now()
-                });
-            }
-        },
-    };
+        return resourceData
+      })
+
+      if (processedEntries.length > 0) {
+        context?.sendEvent?.('resource-metrics', {
+          resources: processedEntries,
+          totalResources: processedEntries.length,
+          slowResources: processedEntries.filter((r) => r.isSlow).length,
+        })
+      }
+    },
+
+    sendEvent(eventType: string, data: any): void {
+      if (context && context.send) {
+        context.send({
+          type: eventType,
+          data: data,
+          timestamp: Date.now(),
+        })
+      }
+    },
+  }
 }
-
-
 
 /** 
 使用 PerformanceObserver 监听资源加载事件

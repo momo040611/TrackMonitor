@@ -74,7 +74,7 @@ export function createErrorPlugin(options: ErrorPluginOptions = {}): ErrorPlugin
   let enabled = true
   let removeHandlers: Array<() => void> = []
   let trackerInstance: any = options.tracker || null
-  
+
   const handleError = (
     errorType: ErrorType,
     error: Error | ErrorEvent | PromiseRejectionEvent | Event | any,
@@ -251,8 +251,8 @@ export function createErrorPlugin(options: ErrorPluginOptions = {}): ErrorPlugin
         typeof trackerInstance === 'object' &&
         typeof trackerInstance.track === 'function'
       ) {
-        const eventName = `error_${errorInfo.type}`;
-       
+        const eventName = `error_${errorInfo.type}`
+
         trackerInstance.track(`error_${errorInfo.type}`, errorInfo)
       }
     } catch (err) {
@@ -311,8 +311,8 @@ export function createErrorPlugin(options: ErrorPluginOptions = {}): ErrorPlugin
   return {
     name: 'error',
     setup(context: CoreContext) {
-     try {
-        // 如果 options 没传 tracker，才尝试从 context 里找 
+      try {
+        // 如果 options 没传 tracker，才尝试从 context 里找
         if (!trackerInstance && context && typeof context === 'object') {
           const ctx = context as Record<string, any>
           if (ctx.tracker) {

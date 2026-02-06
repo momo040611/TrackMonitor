@@ -9,7 +9,7 @@ export function initJsError(
   }
 
   const errorHandler = (event: ErrorEvent): void => {
-    console.log('浏览器捕获到原生错误:', event.message);
+    console.log('浏览器捕获到原生错误:', event.message)
     try {
       // event.preventDefault()
 

@@ -7,8 +7,8 @@ export enum ErrorType {
 }
 
 export interface ErrorPluginOptions {
-  tracker?: any 
-  
+  tracker?: any
+
   /** 是否捕获JavaScript运行时错误 */
   jsError?: boolean
   /** 是否捕获Promise未处理异常 */

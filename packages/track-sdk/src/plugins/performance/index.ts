@@ -1,26 +1,26 @@
-import type { TrackerPlugin } from "../../core";
-import { createHandlerManager } from "./handlers";
+import type { TrackerPlugin } from '../../core'
+import { createHandlerManager } from './handlers'
 import {
   PerformanceMetricType,
   PerformanceInfo,
   PerformancePluginOptions,
-  defaultPerformancePluginOptions
-} from "./types";
+  defaultPerformancePluginOptions,
+} from './types'
 
 /**
  * 性能监控数据处理器类型
  */
-type PerformanceDataHandler = (data: PerformanceInfo) => void;
+type PerformanceDataHandler = (data: PerformanceInfo) => void
 
 /**
  * 性能监控插件
  */
 export class PerformanceMonitor {
-  private options: PerformancePluginOptions;
-  private handlers: PerformanceDataHandler[] = [];
-  private cleanupFunctions: Array<() => void> = [];
-  private enabled = false;
-  private handlerManager: any;
+  private options: PerformancePluginOptions
+  private handlers: PerformanceDataHandler[] = []
+  private cleanupFunctions: Array<() => void> = []
+  private enabled = false
+  private handlerManager: any
 
   /**
    * 创建性能监控实例
@@ -31,7 +31,7 @@ export class PerformanceMonitor {
       // 默认配置
       ...defaultPerformancePluginOptions,
       ...options,
-    };
+    }
   }
 
   /**
@@ -39,7 +39,7 @@ export class PerformanceMonitor {
    * @param handler 数据处理函数
    */
   public addHandler(handler: PerformanceDataHandler): void {
-    this.handlers.push(handler);
+    this.handlers.push(handler)
   }
 
   /**
@@ -47,7 +47,7 @@ export class PerformanceMonitor {
    * @param handler 要移除的数据处理函数
    */
   public removeHandler(handler: PerformanceDataHandler): void {
-    this.handlers = this.handlers.filter(h => h !== handler);
+    this.handlers = this.handlers.filter((h) => h !== handler)
   }
 
   /**
@@ -55,16 +55,16 @@ export class PerformanceMonitor {
    */
   public start(): void {
     if (this.enabled) {
-      return;
+      return
     }
 
-    this.enabled = true;
+    this.enabled = true
 
     // 创建处理器管理器
     this.handlerManager = createHandlerManager({
       enablePageLoadMetrics: this.options.pageLoadMetrics,
-      enableResourceMetrics: this.options.resourceMetrics
-    });
+      enableResourceMetrics: this.options.resourceMetrics,
+    })
 
     // 初始化所有处理器
     this.handlerManager.init({
@@ -75,11 +75,11 @@ export class PerformanceMonitor {
           data.name || 'unknown',
           data.metrics || {},
           data.metadata || {}
-        );
-      }
-    });
+        )
+      },
+    })
 
-    console.log('[TraceSDK][Performance] 性能监控已启动');
+    console.log('[TraceSDK][Performance] 性能监控已启动')
   }
 
   /**
@@ -87,32 +87,36 @@ export class PerformanceMonitor {
    */
   public stop(): void {
     if (!this.enabled) {
-      return;
+      return
     }
 
     // 执行所有清理函数
-    this.cleanupFunctions.forEach(cleanup => cleanup());
-    this.cleanupFunctions = [];
-    
-    // 清理处理器管理器
-    this.handlerManager = undefined;
-    
-    this.enabled = false;
+    this.cleanupFunctions.forEach((cleanup) => cleanup())
+    this.cleanupFunctions = []
 
-    console.log('[TraceSDK][Performance] 性能监控已停止');
+    // 清理处理器管理器
+    this.handlerManager = undefined
+
+    this.enabled = false
+
+    console.log('[TraceSDK][Performance] 性能监控已停止')
   }
 
-
-  private handlePerformanceData(metricType: PerformanceMetricType, name: string, value: Record<string, any>, metadata?: Record<string, any>): void {
+  private handlePerformanceData(
+    metricType: PerformanceMetricType,
+    name: string,
+    value: Record<string, any>,
+    metadata?: Record<string, any>
+  ): void {
     try {
       // 应用采样率过滤
       if (Math.random() > (this.options.samplingRate || 1.0)) {
-        return;
+        return
       }
 
       // 应用忽略规则
       if (this.shouldIgnoreMetric(name)) {
-        return;
+        return
       }
 
       // 创建性能数据信息对象
@@ -126,33 +130,33 @@ export class PerformanceMonitor {
           url: window.location.href,
           title: document.title,
           referrer: document.referrer,
-          hash: window.location.hash
+          hash: window.location.hash,
         },
         userAgent: navigator.userAgent,
         detail: {
           ...value,
           ...(metadata || {}),
         },
-      };
+      }
 
       // 应用自定义过滤规则
       if (this.options.rules && this.options.rules.length > 0) {
-        const shouldKeep = this.options.rules.every(rule => rule(performanceInfo));
+        const shouldKeep = this.options.rules.every((rule) => rule(performanceInfo))
         if (!shouldKeep) {
-          return;
+          return
         }
       }
 
       // 分发数据给所有处理器
-      this.handlers.forEach(handler => {
+      this.handlers.forEach((handler) => {
         try {
-          handler(performanceInfo);
+          handler(performanceInfo)
         } catch (err) {
-          console.error('[TraceSDK][Performance] 处理器错误:', err);
+          console.error('[TraceSDK][Performance] 处理器错误:', err)
         }
-      });
+      })
     } catch (err) {
-      console.error('[TraceSDK][Performance] 处理性能数据错误:', err);
+      console.error('[TraceSDK][Performance] 处理性能数据错误:', err)
     }
   }
 
@@ -162,15 +166,15 @@ export class PerformanceMonitor {
    */
   private shouldIgnoreMetric(name: string): boolean {
     if (!this.options.ignoreMetrics || this.options.ignoreMetrics.length === 0) {
-      return false;
+      return false
     }
 
-    return this.options.ignoreMetrics.some(pattern => {
+    return this.options.ignoreMetrics.some((pattern) => {
       if (pattern instanceof RegExp) {
-        return pattern.test(name);
+        return pattern.test(name)
       }
-      return name === pattern;
-    });
+      return name === pattern
+    })
   }
 
   /**
@@ -179,24 +183,26 @@ export class PerformanceMonitor {
   private getMainMetricValue(type: PerformanceMetricType, data: any): number {
     switch (type) {
       case PerformanceMetricType.PAGE_LOAD:
-        return data.loadComplete || 0;
+        return data.loadComplete || 0
       case PerformanceMetricType.RESOURCE:
-        return data.duration || 0;
+        return data.duration || 0
       default:
-        return 0;
+        return 0
     }
   }
 
   /**
    * 获取指标单位
    */
-  private getMetricUnit(type: PerformanceMetricType): 'ms' | 'byte' | 'count' | 'percent' | 'fps' | 'score' | 'custom' {
+  private getMetricUnit(
+    type: PerformanceMetricType
+  ): 'ms' | 'byte' | 'count' | 'percent' | 'fps' | 'score' | 'custom' {
     switch (type) {
       case PerformanceMetricType.PAGE_LOAD:
       case PerformanceMetricType.RESOURCE:
-        return 'ms';
+        return 'ms'
       default:
-        return 'custom';
+        return 'custom'
     }
   }
 }
@@ -205,23 +211,23 @@ export class PerformanceMonitor {
  * 性能监控插件
  */
 export class PerformancePlugin implements TrackerPlugin {
-  private monitor: PerformanceMonitor;
-  private tracker: any;
+  private monitor: PerformanceMonitor
+  private tracker: any
 
   /**
    * 创建性能监控插件
    * @param options 性能监控配置选项
    */
   constructor(options: PerformancePluginOptions & { tracker: any }) {
-    this.monitor = new PerformanceMonitor(options);
-    this.tracker = options.tracker;
+    this.monitor = new PerformanceMonitor(options)
+    this.tracker = options.tracker
   }
 
   /**
    * 插件名称
    */
   public get name(): string {
-    return "performance";
+    return 'performance'
   }
 
   /**
@@ -231,10 +237,10 @@ export class PerformancePlugin implements TrackerPlugin {
   public setup(context: any): void {
     this.monitor.addHandler((data) => {
       if (this.tracker && this.tracker.track) {
-        this.tracker.track('performance_metric', data);
+        this.tracker.track('performance_metric', data)
       }
-    });
-    this.monitor.start();
+    })
+    this.monitor.start()
   }
 
   /**
@@ -250,7 +256,7 @@ export class PerformancePlugin implements TrackerPlugin {
    */
   public destroy(): void {
     // 停止性能监控
-    this.monitor.stop();
+    this.monitor.stop()
   }
 }
 
@@ -259,12 +265,14 @@ export class PerformancePlugin implements TrackerPlugin {
  * @param options 性能监控配置选项
  * @returns 性能监控插件
  */
-export function createPerformancePlugin(options: PerformancePluginOptions & { tracker: any }): TrackerPlugin {
-  return new PerformancePlugin(options);
+export function createPerformancePlugin(
+  options: PerformancePluginOptions & { tracker: any }
+): TrackerPlugin {
+  return new PerformancePlugin(options)
 }
 
 // 导出类型
-export * from './types';
+export * from './types'
 
 // 创建默认实例
-export const performance = new PerformanceMonitor();
+export const performance = new PerformanceMonitor()
