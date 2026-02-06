@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SDK Pipeline 测试靶场</title>
+</head>
+<body>
+    <h1>埋点 SDK 发送测试</h1>
+    
+    <div style="border: 1px solid #ccc; padding: 20px; margin-bottom: 20px;">
+        <h3>1. 模拟普通行为 (测试批量发送)</h3>
+        <p>策略：设置了 batchLimit: 3。点击 3 次才会发一条请求。</p>
+        <button id="btn-pv">模拟 PageView</button>
+        <button id="btn-click">模拟 Click (点我)</button>
+    </div>
+
+    <div style="border: 1px solid red; padding: 20px;">
+        <h3>2. 模拟报错 (测试立即发送)</h3>
+        <p>策略：Error 事件不排队，点一下发一下。</p>
+        <button id="btn-error">模拟 JS 报错</button>
+    </div>
+
+    <script type="module">
+        // 假设你使用 Vite 启动，可以直接 import TS 文件
+        // 如果报错找不到文件，请改为引入打包后的文件 (如 ../dist/index.mjs)
+        import { createTracker } from '../src/core/index.ts'; 
+        import { SenderPlugin } from '../src/plugins/sender/index.ts';
+
+        // 1. 初始化 SDK
+        const tracker = createTracker({
+            context: {
+                appName: 'test-app',
+                env: 'dev'
+            }
+        });
+
+        // 2. 装载发送插件 (配置连接你的后端)
+        tracker.use(new SenderPlugin({
+            url: 'http://localhost:3000/processing/event', // 确保你的 NestJS 后端开在 3000
+            batchLimit: 3,  // 攒够 3 条发一次
+            timeLimit: 5000 // 或者等 5 秒发一次
+        }));
+
+        console.log('✅ SDK 初始化完成');
+
+        // 3. 绑定测试按钮
+        let count = 0;
+        document.getElementById('btn-click').onclick = () => {
+            count++;
+            console.log(`[点击] 积压第 ${count} 条数据...`);
+            tracker.track('button_click', { 
+                btn_name: 'test_btn', 
+                count: count 
+            });
+        };
+
+        document.getElementById('btn-pv').onclick = () => {
+            count++;
+            console.log(`[PV] 积压第 ${count} 条数据...`);
+            tracker.track('page_view', { path: '/test.html' });
+        };
+
+        document.getElementById('btn-error').onclick = () => {
+            console.log('🚨 [报错] 应该立即发送！');
+            // 注意：事件名以 error_ 开头，触发我们写的高优先级逻辑
+            tracker.track('error_js', { 
+                message: 'Test Error: variable is undefined',
+                stack: 'at test.html:50:10'
+            });
+        };
+    </script>
+</body>
+</html>

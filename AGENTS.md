@@ -3,30 +3,31 @@
 ## Track SDK Skills
 
 ### Skill: 了解 track-sdk 的架构和 TypeScript 规范
+
 ## 1. SDK 总体架构
+
 - **包名称**：`track-sdk`
 - **技术栈**：TypeScript，Rollup 打包（按实际情况修改）
 - **核心模块**：
   - `core`：提供 `Tracker` 核心实例和事件分发能力
   - `plugins`：插件系统（行为、性能、错误等）
   - `src/index.ts`：对外导出统一入口
+
 ### 1.1 Tracker 核心
+
 - 核心概念：`Tracker` 负责接收埋点事件，并把事件分发给已注册的插件。
 - 常见初始化方式（示例形态，具体 API 以实际代码为准）：
+
   ```ts
-  import { createTracker } from "track-sdk";
-  import { createBehaviorPlugin } from "track-sdk/plugins/behavior";
-  import { createPerformancePlugin } from "track-sdk/plugins/performance";
-  import { createErrorPlugin } from "track-sdk/plugins/error";
+  import { createTracker } from 'track-sdk'
+  import { createBehaviorPlugin } from 'track-sdk/plugins/behavior'
+  import { createPerformancePlugin } from 'track-sdk/plugins/performance'
+  import { createErrorPlugin } from 'track-sdk/plugins/error'
 
   export const tracker = createTracker({
-    appId: "REPLACE_WITH_REAL_APP_ID",
-    plugins: [
-      createBehaviorPlugin(),
-      createPerformancePlugin(),
-      createErrorPlugin(),
-    ],
-  });
+    appId: 'REPLACE_WITH_REAL_APP_ID',
+    plugins: [createBehaviorPlugin(), createPerformancePlugin(), createErrorPlugin()],
+  })
   ```
 
 ### 1.2 插件系统
@@ -34,12 +35,12 @@
 - 插件统一实现 `TrackerPlugin` 接口（来自 `core`）：
 
   ```ts
-  import type { TrackerPlugin } from "track-sdk";
+  import type { TrackerPlugin } from 'track-sdk'
 
   export interface TrackerPlugin {
-    name: string;
-    setup?(): void;
-    onEvent?(event: unknown): void; // 实际事件类型以 core 中定义为准
+    name: string
+    setup?(): void
+    onEvent?(event: unknown): void // 实际事件类型以 core 中定义为准
   }
   ```
 
@@ -51,24 +52,22 @@
 - 每个插件通常暴露一个 `createXxxPlugin` 工厂函数，例如（以性能插件为例）：
 
   ```ts
-  import type { TrackerPlugin } from "track-sdk";
+  import type { TrackerPlugin } from 'track-sdk'
 
   export interface PerformancePluginOptions {
     // 预留：比如是否自动打点首屏、LCP 等
   }
 
-  export function createPerformancePlugin(
-    _options: PerformancePluginOptions = {},
-  ): TrackerPlugin {
+  export function createPerformancePlugin(_options: PerformancePluginOptions = {}): TrackerPlugin {
     return {
-      name: "performance",
+      name: 'performance',
       setup() {
         // 初始化性能监控（PerformanceObserver 等）
       },
       onEvent() {
         // 性能相关事件处理入口
       },
-    };
+    }
   }
   ```
 
@@ -87,13 +86,10 @@
 
 ```ts
 export interface TrackEventPayload {
-  [key: string]: unknown;
+  [key: string]: unknown
 }
 
-export function track(
-  eventName: string,
-  payload?: TrackEventPayload,
-): void {
+export function track(eventName: string, payload?: TrackEventPayload): void {
   // ...
 }
 ```
@@ -199,10 +195,10 @@ export function track(
 1. **在入口文件顶部导入 SDK 及插件：**
 
    ```ts
-   import { createTracker } from "track-sdk";
-   import { createBehaviorPlugin } from "track-sdk/plugins/behavior";
-   import { createPerformancePlugin } from "track-sdk/plugins/performance";
-   import { createErrorPlugin } from "track-sdk/plugins/error";
+   import { createTracker } from 'track-sdk'
+   import { createBehaviorPlugin } from 'track-sdk/plugins/behavior'
+   import { createPerformancePlugin } from 'track-sdk/plugins/performance'
+   import { createErrorPlugin } from 'track-sdk/plugins/error'
    ```
 
 2. **创建并导出全局 `tracker` 实例：**
@@ -211,25 +207,20 @@ export function track(
 
    ```ts
    export const tracker = createTracker({
-     appId: "REPLACE_WITH_REAL_APP_ID", // TODO: 由接入方填入真实应用 ID
-     plugins: [
-       createBehaviorPlugin(),
-       createPerformancePlugin(),
-       createErrorPlugin(),
-     ],
-   });
+     appId: 'REPLACE_WITH_REAL_APP_ID', // TODO: 由接入方填入真实应用 ID
+     plugins: [createBehaviorPlugin(), createPerformancePlugin(), createErrorPlugin()],
+   })
    ```
 
 3. **确保 `tracker` 在业务代码中可复用：**
-
    - 在业务组件或其他模块中，需要使用埋点时，应从同一个入口模块导入 `tracker`，例如：
 
      ```ts
-     import { tracker } from "../main"; // 路径根据实际入口文件调整
+     import { tracker } from '../main' // 路径根据实际入口文件调整
 
-     tracker.track("button_click", {
-       position: "header",
-     });
+     tracker.track('button_click', {
+       position: 'header',
+     })
      ```
 
    - 避免在多个不同文件中重复调用 `createTracker`，以免产生多个实例。
@@ -243,9 +234,9 @@ export function track(
    在首页或某个按钮点击中添加一个测试事件：
 
    ```ts
-   tracker.track("sdk_init_test", {
+   tracker.track('sdk_init_test', {
      env: process.env.NODE_ENV,
-   });
+   })
    ```
 
 2. **控制台确认：**
@@ -253,7 +244,7 @@ export function track(
    在 `createTracker` 的实现或初始化阶段，可以打印一条日志（如果 SDK 内部尚未实现，可临时在接入代码中添加）：
 
    ```ts
-   console.log("[track-sdk] tracker initialized");
+   console.log('[track-sdk] tracker initialized')
    ```
 
 3. **后续接入监控服务时**，应能在后台看到对应的事件上报记录。

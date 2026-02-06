@@ -4,8 +4,8 @@ import { StyledInput, StyledButton } from './index'
 export const LoginScreen = ({ onError }: { onError: (error: Error) => void }) => {
   const { login } = useAuth()
   const [isLoading, setIsLoading] = useState(false)
-  const [username, setUsername] = useState('bingbing13')
-  const [password, setPassword] = useState('123456')
+  const [username, setUsername] = useState('')
+  const [password, setPassword] = useState('')
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

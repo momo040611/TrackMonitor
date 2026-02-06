@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SDK 全链路集成测试</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        .card { border: 1px solid #ddd; padding: 15px; margin-bottom: 15px; border-radius: 8px; }
+        .btn { padding: 8px 16px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 4px; }
+        .btn:hover { background: #0056b3; }
+        .btn-err { background: #dc3545; }
+        .btn-err:hover { background: #c82333; }
+        #console-log { background: #f4f4f4; padding: 10px; height: 200px; overflow-y: auto; font-family: monospace; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <h1>🎯 SDK 全链路集成测试</h1>
+    
+    <div class="card">
+        <h3>1. 行为采集 (Behavior & Pipeline)</h3>
+        <p>策略：设置了 <code>batchLimit: 3</code>。点击 3 次才会发一条请求。</p>
+        <button class="btn" id="btn-buy" data-track-name="buy_button">模拟购买 (点击我)</button>
+        <button class="btn" id="btn-nav">普通按钮</button>
+    </div>
+
+    <div class="card">
+        <h3>2. 错误监控 (Error & Realtime)</h3>
+        <p>策略：错误事件走 VIP 通道，不排队，<b>立即发送</b>。</p>
+        <button class="btn btn-err" id="btn-js-error">触发 JS 错误</button>
+        <button class="btn btn-err" id="btn-promise-error">触发 Promise 错误</button>
+    </div>
+
+    <div class="card">
+        <h3>3. 实时日志</h3>
+        <div id="console-log"></div>
+    </div>
+
+    <script type="module">
+        // 直接引入你的源码
+        import { createTracker } from '../src/core/index.ts';
+        import { SenderPlugin } from '../src/plugins/sender/index.ts';
+        import { createBehaviorPlugin } from '../src/plugins/behavior/index.ts';
+        import { createErrorPlugin } from '../src/plugins/error/index.ts';
+        import { createPerformancePlugin } from '../src/plugins/performance/index.ts';
+
+        // 劫持 console.log 显示到页面上
+        const originalLog = console.log;
+        const logDiv = document.getElementById('console-log');
+        console.log = (...args) => {
+            originalLog(...args);
+            const line = document.createElement('div');
+            line.innerText = `[${new Date().toLocaleTimeString()}] ${args.join(' ')}`;
+            logDiv.prepend(line);
+        };
+
+        console.log('🚀 正在初始化 SDK...');
+
+        // 1. 创建 Tracker
+        const tracker = createTracker({
+            context: { appName: 'test-suite', env: 'local' }
+        });
+
+        // 2. 装载插件 (注意这里的顺序和传参)
+        
+        // Sender: 负责发货
+        tracker.use(new SenderPlugin({
+            url: 'http://localhost:3000/processing/event',
+            batchLimit: 3,  // 攒够3条发一次
+            timeLimit: 5000 // 或等5秒发一次
+        }));
+
+        // Behavior: 负责监听点击
+        // 传入 tracker 实例，开启自动采集
+        tracker.use(createBehaviorPlugin({ tracker }));
+
+        // Error: 负责监听报错
+        tracker.use(createErrorPlugin({ tracker }));
+
+        // Performance: 负责监听性能
+        tracker.use(createPerformancePlugin({ tracker }));
+
+        console.log(' SDK 初始化完成！');
+
+        // --- 绑定测试事件 ---
+
+        // 模拟 JS 报错
+        document.getElementById('btn-js-error').onclick = () => {
+            console.log('触发一个 JS 错误...');
+            throw new Error('这是一条测试用的 JS 错误！');
+        };
+
+        // 模拟 Promise 报错
+        document.getElementById('btn-promise-error').onclick = () => {
+            console.log(' 触发一个 Promise 拒绝...');
+            Promise.reject('这是一条测试用的 Promise Error！');
+        };
+
+    </script>
+</body>
+</html>

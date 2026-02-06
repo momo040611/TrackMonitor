@@ -63,10 +63,10 @@
 1. **在入口文件顶部导入 SDK 及插件：**
 
    ```ts
-   import { createTracker } from "track-sdk";
-   import { createBehaviorPlugin } from "track-sdk/plugins/behavior";
-   import { createPerformancePlugin } from "track-sdk/plugins/performance";
-   import { createErrorPlugin } from "track-sdk/plugins/error";
+   import { createTracker } from 'track-sdk'
+   import { createBehaviorPlugin } from 'track-sdk/plugins/behavior'
+   import { createPerformancePlugin } from 'track-sdk/plugins/performance'
+   import { createErrorPlugin } from 'track-sdk/plugins/error'
    ```
 
 2. **创建并导出全局 `tracker` 实例：**
@@ -75,25 +75,20 @@
 
    ```ts
    export const tracker = createTracker({
-     appId: "REPLACE_WITH_REAL_APP_ID", // TODO: 由接入方填入真实应用 ID
-     plugins: [
-       createBehaviorPlugin(),
-       createPerformancePlugin(),
-       createErrorPlugin(),
-     ],
-   });
+     appId: 'REPLACE_WITH_REAL_APP_ID', // TODO: 由接入方填入真实应用 ID
+     plugins: [createBehaviorPlugin(), createPerformancePlugin(), createErrorPlugin()],
+   })
    ```
 
 3. **确保 `tracker` 在业务代码中可复用：**
-
    - 在业务组件或其他模块中，需要使用埋点时，应从同一个入口模块导入 `tracker`，例如：
 
      ```ts
-     import { tracker } from "../main"; // 路径根据实际入口文件调整
+     import { tracker } from '../main' // 路径根据实际入口文件调整
 
-     tracker.track("button_click", {
-       position: "header",
-     });
+     tracker.track('button_click', {
+       position: 'header',
+     })
      ```
 
    - 避免在多个不同文件中重复调用 `createTracker`，以免产生多个实例。
@@ -107,9 +102,9 @@
    在首页或某个按钮点击中添加一个测试事件：
 
    ```ts
-   tracker.track("sdk_init_test", {
+   tracker.track('sdk_init_test', {
      env: process.env.NODE_ENV,
-   });
+   })
    ```
 
 2. **控制台确认：**
@@ -117,7 +112,7 @@
    在 `createTracker` 的实现或初始化阶段，可以打印一条日志（如果 SDK 内部尚未实现，可临时在接入代码中添加）：
 
    ```ts
-   console.log("[track-sdk] tracker initialized");
+   console.log('[track-sdk] tracker initialized')
    ```
 
 3. **后续接入监控服务时**，应能在后台看到对应的事件上报记录。
@@ -140,4 +135,3 @@
 - 如果无法自动识别入口文件或包管理器：
   - 不要强行创建新的入口文件或随意选择安装命令。
   - 应明确提示用户手动指定入口文件路径或使用的包管理工具。
-

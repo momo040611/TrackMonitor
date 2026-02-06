@@ -4,7 +4,7 @@ import { TrackingCopilot } from './components/TrackingCopilot/TrackingCopilot'
 import { LogParser } from './components/LogParser/LogParser'
 import { AnomalyDiagnosis } from './components/AnomalyDiagnosis/AnomalyDiagnosis'
 import { RootCauseAnalysis } from './components/RootCauseAnalysis/RootCauseAnalysis'
-import { SmartDispatch } from './components/SmartDispatch/SmartDispathc'
+import { SmartDispatch } from './components/SmartDispatch/SmartDispatch'
 import {
   CodeOutlined,
   BugOutlined,

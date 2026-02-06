@@ -1,28 +1,29 @@
 # Skill: 了解 track-sdk 的架构和 TypeScript 规范
+
 ## 1. SDK 总体架构
+
 - **包名称**：`track-sdk`
 - **技术栈**：TypeScript，Rollup 打包（按实际情况修改）
 - **核心模块**：
   - `core`：提供 `Tracker` 核心实例和事件分发能力
   - `plugins`：插件系统（行为、性能、错误等）
   - `src/index.ts`：对外导出统一入口
+
 ### 1.1 Tracker 核心
+
 - 核心概念：`Tracker` 负责接收埋点事件，并把事件分发给已注册的插件。
 - 常见初始化方式（示例形态，具体 API 以实际代码为准）：
+
   ```ts
-  import { createTracker } from "track-sdk";
-  import { createBehaviorPlugin } from "track-sdk/plugins/behavior";
-  import { createPerformancePlugin } from "track-sdk/plugins/performance";
-  import { createErrorPlugin } from "track-sdk/plugins/error";
+  import { createTracker } from 'track-sdk'
+  import { createBehaviorPlugin } from 'track-sdk/plugins/behavior'
+  import { createPerformancePlugin } from 'track-sdk/plugins/performance'
+  import { createErrorPlugin } from 'track-sdk/plugins/error'
 
   export const tracker = createTracker({
-    appId: "REPLACE_WITH_REAL_APP_ID",
-    plugins: [
-      createBehaviorPlugin(),
-      createPerformancePlugin(),
-      createErrorPlugin(),
-    ],
-  });
+    appId: 'REPLACE_WITH_REAL_APP_ID',
+    plugins: [createBehaviorPlugin(), createPerformancePlugin(), createErrorPlugin()],
+  })
   ```
 
 ### 1.2 插件系统
@@ -30,12 +31,12 @@
 - 插件统一实现 `TrackerPlugin` 接口（来自 `core`）：
 
   ```ts
-  import type { TrackerPlugin } from "track-sdk";
+  import type { TrackerPlugin } from 'track-sdk'
 
   export interface TrackerPlugin {
-    name: string;
-    setup?(): void;
-    onEvent?(event: unknown): void; // 实际事件类型以 core 中定义为准
+    name: string
+    setup?(): void
+    onEvent?(event: unknown): void // 实际事件类型以 core 中定义为准
   }
   ```
 
@@ -47,24 +48,22 @@
 - 每个插件通常暴露一个 `createXxxPlugin` 工厂函数，例如（以性能插件为例）：
 
   ```ts
-  import type { TrackerPlugin } from "track-sdk";
+  import type { TrackerPlugin } from 'track-sdk'
 
   export interface PerformancePluginOptions {
     // 预留：比如是否自动打点首屏、LCP 等
   }
 
-  export function createPerformancePlugin(
-    _options: PerformancePluginOptions = {},
-  ): TrackerPlugin {
+  export function createPerformancePlugin(_options: PerformancePluginOptions = {}): TrackerPlugin {
     return {
-      name: "performance",
+      name: 'performance',
       setup() {
         // 初始化性能监控（PerformanceObserver 等）
       },
       onEvent() {
         // 性能相关事件处理入口
       },
-    };
+    }
   }
   ```
 
@@ -83,13 +82,10 @@
 
 ```ts
 export interface TrackEventPayload {
-  [key: string]: unknown;
+  [key: string]: unknown
 }
 
-export function track(
-  eventName: string,
-  payload?: TrackEventPayload,
-): void {
+export function track(eventName: string, payload?: TrackEventPayload): void {
   // ...
 }
 ```
