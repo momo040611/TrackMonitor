@@ -17,14 +17,18 @@ import './SmartHall.less'
 const { Title, Paragraph } = Typography
 
 const SmartHall: React.FC = () => {
-  //  管理当前激活的 Tab
   const [activeTab, setActiveTab] = useState('2')
-  // 用于在模块间传递的任务数据
   const [dispatchTask, setDispatchTask] = useState<string>('')
+  const [logContext, setLogContext] = useState<string>('')
 
   const handleGoToDispatch = (issueContent: string) => {
     setDispatchTask(issueContent)
     setActiveTab('5')
+  }
+
+  const handleAnalyzeLog = (rawLog: string) => {
+    setLogContext(rawLog)
+    setActiveTab('3')
   }
 
   const items = [
@@ -54,7 +58,7 @@ const SmartHall: React.FC = () => {
           <FileTextOutlined /> 日志智能解析
         </span>
       ),
-      children: <LogParser />,
+      children: <LogParser initialLog={logContext} onDispatch={handleGoToDispatch} />,
     },
     {
       key: '4',
@@ -63,7 +67,7 @@ const SmartHall: React.FC = () => {
           <AimOutlined /> 根因定位
         </span>
       ),
-      children: <RootCauseAnalysis />,
+      children: <RootCauseAnalysis onAnalyzeLog={handleAnalyzeLog} />,
     },
     {
       key: '5',

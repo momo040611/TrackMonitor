@@ -10,6 +10,7 @@ import {
   Timeline,
   Descriptions,
   Progress,
+  message,
 } from 'antd'
 import {
   AimOutlined,
@@ -24,6 +25,10 @@ import {
 import './RootCauseAnalysis.less'
 
 const { Title, Text } = Typography
+
+interface Props {
+  onAnalyzeLog?: (log: string) => void
+}
 
 // 数据接口定义
 interface RootCauseResult {
@@ -42,7 +47,7 @@ interface DetailLog {
   stack?: string
 }
 
-export const RootCauseAnalysis: React.FC = () => {
+export const RootCauseAnalysis: React.FC<Props> = ({ onAnalyzeLog }) => {
   const [loading, setLoading] = useState(false)
   const [results, setResults] = useState<RootCauseResult[]>([])
 
@@ -56,6 +61,16 @@ export const RootCauseAnalysis: React.FC = () => {
   const itemRefs = useRef<(HTMLDivElement | null)[]>([])
   // 存储计算好的连线路径
   const [svgPaths, setSvgPaths] = useState<string[]>([])
+
+  const handleDeepAnalysis = (log: DetailLog) => {
+    if (!onAnalyzeLog) return
+
+    // 构造一个模拟的 Raw Log 字符串
+    const rawLogString = `[${log.time}] [${log.level}] [Thread-main] ${log.message}\n${log.stack || ''}`
+
+    onAnalyzeLog(rawLogString)
+    message.loading('正在提取日志上下文...', 0.5)
+  }
 
   const handleAnalyze = async () => {
     setLoading(true)
@@ -379,10 +394,23 @@ export const RootCauseAnalysis: React.FC = () => {
             <Timeline style={{ marginTop: 20 }}>
               {detailLogs.map((log) => (
                 <Timeline.Item key={log.id} color="red">
-                  <Text strong>{log.time.split(' ')[1]}</Text>
-                  <div style={{ fontSize: 12, color: '#666', fontFamily: 'monospace' }}>
-                    {log.message}
-                  </div>
+                  <Space direction="vertical" style={{ width: '100%' }}>
+                    <div>
+                      <Text strong>{log.time.split(' ')[1]}</Text>
+                      <div style={{ fontSize: 12, color: '#666', fontFamily: 'monospace' }}>
+                        {log.message}
+                      </div>
+                    </div>
+
+                    <Button
+                      type="link"
+                      size="small"
+                      style={{ padding: 0, height: 'auto' }}
+                      onClick={() => handleDeepAnalysis(log)}
+                    >
+                      <FileTextOutlined /> 深度解析此日志
+                    </Button>
+                  </Space>
                 </Timeline.Item>
               ))}
             </Timeline>

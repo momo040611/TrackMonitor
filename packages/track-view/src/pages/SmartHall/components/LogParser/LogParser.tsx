@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Card, Steps, Typography, Input, Button, Spin, Empty, Tag, message } from 'antd'
 import {
   FileSearchOutlined,
@@ -9,21 +9,57 @@ import {
   CheckCircleOutlined,
   CodeOutlined,
   FileTextOutlined,
+  ExportOutlined,
 } from '@ant-design/icons'
 import './LogParser.less'
 
 const { Text } = Typography
 const { TextArea } = Input
 
-export const LogParser: React.FC = () => {
+//  定义 Props
+interface Props {
+  initialLog?: string
+  onDispatch?: (content: string) => void
+}
+
+interface LogParseResult {
+  event: string
+  risk_level: string // 'high' | 'medium' | 'low'
+  confidence: number
+  ai_summary: string
+  timestamp: string
+  user: {
+    id: string
+    device_os: string
+  }
+  metrics: {
+    latency: string
+    status: string
+  }
+  properties: {
+    [key: string]: any // 动态属性
+  }
+}
+
+export const LogParser: React.FC<Props> = ({ initialLog, onDispatch }) => {
   const [loading, setLoading] = useState(false)
   const [currentStep, setCurrentStep] = useState<number>(-1)
-  const [parseResult, setParseResult] = useState<string | null>(null)
+  const [parseResult, setParseResult] = useState<LogParseResult | null>(null)
 
   const mockLog = `[2026-01-31 10:23:45] [INFO] [UserTrace] uid:88231 action:video_play_start video_id:v9921 source:feed_recommend device:ios_17 duration:0ms`
 
+  const [inputText, setInputText] = useState(mockLog)
+
+  useEffect(() => {
+    if (initialLog) {
+      setInputText(initialLog)
+      message.info('已加载关联的根因日志')
+    }
+  }, [initialLog])
+
   const mockResult = {
     event: 'video_play_start',
+    risk_level: 'high',
     user: {
       id: '88231',
       device_os: 'iOS 17',
@@ -33,8 +69,13 @@ export const LogParser: React.FC = () => {
       source_page: 'feed_recommend',
       status: 'started',
     },
+    metrics: {
+      latency: '450ms',
+      status: '502 Bad Gateway',
+    },
     timestamp: '2026-01-31 10:23:45',
     confidence: 0.98,
+    ai_summary: '检测到用户在 iOS 17 环境下启动视频播放失败，且伴随高延迟与 502 网关错误。', // 新增
   }
 
   const handleSimulateParse = () => {
@@ -49,9 +90,33 @@ export const LogParser: React.FC = () => {
 
     setTimeout(() => {
       setLoading(false)
-      setParseResult(JSON.stringify(mockResult, null, 2))
+      // setParseResult(JSON.stringify(mockResult, null, 2))
+      setParseResult(mockResult)
       message.success('日志解析完成')
     }, 3500)
+  }
+
+  const handleToDispatch = () => {
+    if (!parseResult || !onDispatch) return
+
+    const taskContext = `
+【日志分析转工单】${parseResult.ai_summary || '日志异常检测'}
+-------------------------
+[事件类型] ${parseResult.event}
+[风险等级] ${(parseResult.risk_level || 'unknown').toUpperCase()}
+[置信度] ${(parseResult.confidence * 100).toFixed(0)}%
+[关键指标] ${JSON.stringify(parseResult.metrics || {})}
+
+[涉及实体]
+- 用户: ${parseResult.user?.id} (${parseResult.user?.device_os})
+- 属性: ${JSON.stringify(parseResult.properties)}
+
+[原始日志]
+${inputText.substring(0, 150)}...
+    `.trim()
+
+    onDispatch(taskContext)
+    message.loading('正在同步至分派台...', 0.5)
   }
 
   return (
@@ -72,8 +137,9 @@ export const LogParser: React.FC = () => {
 
           <TextArea
             className="log-input"
-            rows={12}
-            defaultValue={mockLog}
+            rows={10}
+            value={inputText}
+            onChange={(e) => setInputText(e.target.value)}
             placeholder="粘贴日志内容..."
           />
 
@@ -119,7 +185,27 @@ export const LogParser: React.FC = () => {
                 <Spin tip="AI 正在进行向量化与推理中..." />
               </div>
             ) : parseResult ? (
-              <pre className="result-content">{parseResult}</pre>
+              <>
+                <pre className="result-content">{JSON.stringify(parseResult, null, 2)}</pre>
+                <div
+                  style={{
+                    marginTop: 16,
+                    paddingTop: 12,
+                    borderTop: '1px solid #f0f0f0',
+                    textAlign: 'right',
+                  }}
+                >
+                  <Button
+                    type="primary"
+                    icon={<ExportOutlined />}
+                    onClick={handleToDispatch}
+                    // 如果父组件没传回调，则禁用按钮
+                    disabled={!onDispatch}
+                  >
+                    转派工单
+                  </Button>
+                </div>
+              </>
             ) : (
               <Empty
                 className="empty-state"
