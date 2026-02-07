@@ -25,11 +25,22 @@ export class GatewayService {
     return { sucess: true }
   }
   // 获取事件
-  async getEvents(type: string, time: string, limit: number) {
-    return await this.processingService.getEvents(type, time, limit)
+  async getEvents(
+    type: string,
+    time: string,
+    startTime?: string,
+    endTime?: string,
+    limit?: number
+  ) {
+    return await this.processingService.getEvents(type, time, startTime, endTime, limit)
   }
   //获取对应所有事件的接口
   async getEventList(type: string) {
     return await this.processingService.getEventList(type)
+  }
+
+  //分析特定时间事件
+  async analyzeEvent(type: string, time: string, startTime?: string, endTime?: string) {
+    return await this.processingService.analyzeEvent(type, time, startTime, endTime)
   }
 }
