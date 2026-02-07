@@ -1,23 +1,56 @@
 import { Injectable } from '@nestjs/common'
 import { StorageService } from '../../storage/storage.service'
 import { EventDto } from '../../common/dto/event'
+import { InjectRepository } from '@nestjs/typeorm'
+import { Repository } from 'typeorm'
+import { UserActivityStatsEntity } from '../../storage/database/entities/user-activity-stats.entity'
 
 @Injectable()
 export class EventAnalysisService {
-  constructor(private readonly storageService: StorageService) {}
+  constructor(
+    private readonly storageService: StorageService,
+    @InjectRepository(UserActivityStatsEntity)
+    private readonly statsRepository: Repository<UserActivityStatsEntity>
+  ) {}
 
   async processUserBehavior(event: EventDto) {
-    // 这里可以添加具体的用户行为分析逻辑
-    // 比如：判断是否是关键行为，更新用户画像等
-    console.log(`Processing user behavior: ${event.type} for user ${event.userId}`)
-    return await this.storageService.saveEvent(event)
+    // 1. Save raw event
+    await this.storageService.saveEvent(event)
+
+    // 2. Update user activity stats
+    if (event.userId) {
+      await this.updateUserActivity(event.userId)
+    }
+  }
+
+  private async updateUserActivity(userId: number) {
+    const today = new Date().toISOString().split('T')[0]
+
+    let stats = await this.statsRepository.findOne({
+      where: { userId, date: today },
+    })
+
+    if (stats) {
+      stats.eventCount += 1
+      await this.statsRepository.save(stats)
+    } else {
+      stats = this.statsRepository.create({
+        userId,
+        date: today,
+        eventCount: 1,
+      })
+      await this.statsRepository.save(stats)
+    }
   }
 
   async getUserBehaviors(userId: number) {
-    // 这是一个简单的示例，实际情况可能需要调用 StorageService 的特定查询方法
-    // 目前 StorageService.getEvents 是通过 params 过滤
-    // 假设我们需要获取该用户的所有行为
-    // 注意：需要在 StorageService/DatabaseService 中支持更多查询条件
     return await this.storageService.getEvents({ userId })
+  }
+
+  async getUserStats(userId: number) {
+    return await this.statsRepository.find({
+      where: { userId },
+      order: { date: 'DESC' },
+    })
   }
 }

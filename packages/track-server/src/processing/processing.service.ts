@@ -25,9 +25,11 @@ export class ProcessingService {
         console.warn(`Unknown event type: ${event.type}`)
     }
   }
-  // 简单查询 不走业务层
+
+  // 修复：移除 Number(time)，直接传递 string 类型的 time（适配 ms 库）
   async getEvents(type: string, time: string, limit: number): Promise<any[]> {
-    return await this.storageService.getEvents({ type, time: Number(time), limit })
+    // 关键修改：time 不再转数字，直接传原始字符串
+    return await this.storageService.getEvents({ type, time, limit })
   }
 
   // 获取所有事件

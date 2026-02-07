@@ -1,6 +1,6 @@
 import { Injectable, BadRequestException } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
-import { Repository, MoreThanOrEqual, IsNull, Not } from 'typeorm'
+import { Repository, MoreThanOrEqual } from 'typeorm'
 import { EventDto } from 'src/common/dto/event'
 import { EventEntity } from './entities/event.entity'
 import { EventPriority } from 'src/common/dto/event'
@@ -23,10 +23,9 @@ export class DatabaseService {
     const eventEntity = new EventEntity()
     eventEntity.type = event.type
     eventEntity.data = event.data
-    eventEntity.url = event.url || '' // 这里已经处理了url，和之前报错的问题解耦
+    eventEntity.url = event.url || ''
     eventEntity.priority = priorityMap[event.priority] || 0
-    eventEntity.userId = event.userId || 0
-    // 手动赋值timestamp（防止实体未配置默认值导致查询时间匹配不上）
+    eventEntity.userId = event.userId || 0 // 兜底0，避免undefined
     eventEntity.timestamp = new Date()
     const savedEntity = await this.eventRepository.save(eventEntity)
     return savedEntity.id
@@ -34,34 +33,46 @@ export class DatabaseService {
 
   async getEvents(params: {
     type?: string
-    time?: number
+    time?: string
     limit?: number
+    userId?: number
   }): Promise<EventEntity[]> {
-    const { type, time, limit } = params
-    // 构建查询条件（仅保留有值的条件，避免undefined导致的查询异常）
+    const { type, time, limit, userId } = params
     const whereCondition: Record<string, any> = {}
 
-    // 处理type条件：非all/非空时才添加
     if (type && type !== 'all') {
       whereCondition.type = type
     }
 
-    // 处理time条件：时间参数有效时，添加时间筛选
-    if (time) {
-      const timeMs = ms(time)
-      if (!timeMs) {
-        throw new BadRequestException('时间参数格式错误，支持如 1h/1d/30m 等格式')
-      }
-      const startTime = new Date(Date.now() - timeMs)
-      whereCondition.timestamp = MoreThanOrEqual(startTime)
+    if (userId && userId !== 0) {
+      whereCondition.userId = userId
     }
 
-    // 执行查询：仅传递有值的条件、排序、分页
+    if (time) {
+      try {
+        // 修复1：先执行 ms 解析，再强制类型断言为 number + 兜底
+        const parsedTime = ms(time as any)
+        // 确保 parsedTime 是有效数字（排除 string/undefined 情况）
+        const timeMs = typeof parsedTime === 'number' ? parsedTime : NaN
+
+        // 修复2：严格校验 timeMs 是有效数字，避免算术运算报错
+        if (isNaN(timeMs) || timeMs <= 0) {
+          throw new Error('Invalid time format')
+        }
+
+        // 此时 timeMs 100% 是有效数字，算术运算无类型报错
+        const startTime = new Date(Date.now() - timeMs)
+        whereCondition.timestamp = MoreThanOrEqual(startTime)
+      } catch (error) {
+        throw new BadRequestException('时间参数格式错误，支持如 1h/1d/30m 等格式')
+      }
+    }
+
     return this.eventRepository.find({
       where: whereCondition,
       order: { timestamp: 'DESC' },
-      take: limit ? Number(limit) : undefined, // 确保limit是数字
-      select: ['id', 'type', 'url', 'data', 'userId', 'timestamp', 'priority'], // 可选：指定返回字段，避免冗余
+      take: limit ? Number(limit) : undefined,
+      select: ['id', 'type', 'url', 'data', 'userId', 'timestamp', 'priority'],
     })
   }
 }

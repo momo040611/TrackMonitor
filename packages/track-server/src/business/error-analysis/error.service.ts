@@ -10,7 +10,7 @@ export class ErrorService {
     await this.storageService.saveEvent(event)
   }
 
-  async getErrors({ time, limit }: { time: number; limit: number }) {
+  async getErrors({ time, limit }: { time: string; limit: number }) {
     return await this.storageService.getEvents({ type: 'error', time, limit })
   }
 }

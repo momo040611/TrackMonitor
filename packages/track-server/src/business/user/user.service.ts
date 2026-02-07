@@ -1,9 +1,16 @@
-import { Injectable, ConflictException, UnauthorizedException } from '@nestjs/common'
+// 1. 新增 BadRequestException 导入
+import {
+  Injectable,
+  ConflictException,
+  UnauthorizedException,
+  BadRequestException,
+} from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { UserEntity } from '../../storage/database/entities/user.entity'
 import { CreateUserDto } from './dto/create-user.dto'
 import { LoginDto } from './dto/login.dto'
+import * as bcrypt from 'bcrypt'
 
 @Injectable()
 export class UserService {
@@ -13,6 +20,11 @@ export class UserService {
   ) {}
 
   async register(createUserDto: CreateUserDto): Promise<UserEntity> {
+    // 1. 先校验密码必传（即使DTO有校验，服务层做兜底）
+    if (!createUserDto.password) {
+      throw new BadRequestException('Password is required')
+    }
+
     const existingUser = await this.userRepository.findOne({
       where: { username: createUserDto.username },
     })
@@ -20,28 +32,50 @@ export class UserService {
       throw new ConflictException('Username is already taken')
     }
 
-    const newUser = this.userRepository.create(createUserDto)
-    // In a real app, hash password here: await bcrypt.hash(newUser.password, 10);
+    // 2. 密码加密（固定加盐轮数，避免异步类型问题）
+    const saltRounds = 10
+    const hashedPassword = await bcrypt.hash(createUserDto.password, saltRounds)
+
+    // 3. 创建用户（确保类型匹配）
+    const newUser = this.userRepository.create({
+      username: createUserDto.username,
+      password: hashedPassword,
+      email: createUserDto.email || '', // 兜底空字符串，避免undefined
+    })
     return await this.userRepository.save(newUser)
   }
 
-  async login(loginDto: LoginDto): Promise<any> {
+  // 4. 补充login方法（控制器调用的核心）
+  async login(loginDto: LoginDto): Promise<{ user: Omit<UserEntity, 'password'>; token?: string }> {
+    // 校验入参
+    if (!loginDto.username || !loginDto.password) {
+      throw new UnauthorizedException('Username and password are required')
+    }
+
+    // 查询用户（统一返回null，避免undefined/null混用）
     const user = await this.userRepository.findOne({
       where: { username: loginDto.username },
     })
-
     if (!user) {
       throw new UnauthorizedException('Invalid credentials')
     }
 
-    // In a real app, check password match: await bcrypt.compare(loginDto.password, user.password);
-    if (loginDto.password && user.password !== loginDto.password) {
+    // 2. 修复 user.password 可能为 undefined 的问题：兜底空字符串
+    const userPassword = user.password || ''
+    // 校验密码（使用兜底后的字符串，避免类型报错）
+    const isPasswordValid = await bcrypt.compare(loginDto.password, userPassword)
+    if (!isPasswordValid) {
       throw new UnauthorizedException('Invalid credentials')
     }
 
-    // Return user info or JWT token
-    const { password, ...result } = user
-    return result
+    // 返回用户信息（剔除密码）
+    const { password, ...userInfo } = user
+    return { user: userInfo } // 后续加JWT时补充token
+  }
+
+  // 5. 统一返回类型为 null（避免undefined/null混用）
+  async findOneByUsername(username: string): Promise<UserEntity | null> {
+    return this.userRepository.findOne({ where: { username } })
   }
 
   async findOne(id: number): Promise<UserEntity | null> {
