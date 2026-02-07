@@ -14,4 +14,9 @@ export class BusinessController {
   async createAlert(@Body() alert: any) {
     return this.businessService.createAlert(alert)
   }
+
+  @Get('user-behavior')
+  async getUserBehavior(@Query('userId') userId: number) {
+    return this.businessService.getUserBehaviors(userId)
+  }
 }

@@ -3,13 +3,15 @@ import { PerformanceService } from './performance-analysis/performance.service'
 import { EventDto } from '../common/dto/event'
 import { StorageService } from '../storage/storage.service'
 import { ErrorService } from './error-analysis/error.service'
+import { EventAnalysisService } from './event-analysis/event-analysis.service'
 
 @Injectable()
 export class BusinessService {
   constructor(
     private readonly performanceService: PerformanceService,
     private readonly storageService: StorageService,
-    private readonly errorService: ErrorService
+    private readonly errorService: ErrorService,
+    private readonly eventAnalysisService: EventAnalysisService
   ) {}
 
   getAnalysis(params: any): any {
@@ -25,5 +27,13 @@ export class BusinessService {
   async reportErrorEvent(event: EventDto): Promise<void> {
     // 调用 ErrorService 上报错误事件
     await this.errorService.reportErrorEvent(event)
+  }
+
+  async reportUserBehaviorEvent(event: EventDto): Promise<void> {
+    await this.eventAnalysisService.processUserBehavior(event)
+  }
+
+  async getUserBehaviors(userId: number): Promise<any[]> {
+    return await this.eventAnalysisService.getUserBehaviors(userId)
   }
 }

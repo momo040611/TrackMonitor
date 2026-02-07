@@ -19,6 +19,7 @@ export class ProcessingService {
       case 'performance':
         break
       case 'userBehavior':
+        await this.businessService.reportUserBehaviorEvent(event)
         break
       default:
         console.warn(`Unknown event type: ${event.type}`)
