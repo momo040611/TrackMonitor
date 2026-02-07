@@ -18,6 +18,9 @@ export class EventEntity {
   @Column({ nullable: true })
   userId: number
 
+  @Column({ nullable: true })
+  sessionId: string
+
   @CreateDateColumn()
   timestamp: Date
 

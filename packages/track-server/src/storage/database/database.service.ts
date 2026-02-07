@@ -26,6 +26,7 @@ export class DatabaseService {
     eventEntity.url = event.url || ''
     eventEntity.priority = priorityMap[event.priority] || 0
     eventEntity.userId = event.userId || 0 // 兜底0，避免undefined
+    eventEntity.sessionId = event.sessionId || ''
     eventEntity.timestamp = new Date()
     const savedEntity = await this.eventRepository.save(eventEntity)
     return savedEntity.id
