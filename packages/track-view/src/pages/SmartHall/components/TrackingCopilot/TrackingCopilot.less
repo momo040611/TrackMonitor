@@ -1,0 +1,104 @@
+.tracking-copilot-container {
+    display: flex;
+    gap: 24px;
+    align-items: flex-start;
+
+    /* 左侧输入卡片 */
+    .input-card {
+        flex: 1;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+
+        .instruction-text {
+            display: block;
+            margin-bottom: 12px;
+        }
+
+        .requirement-input {
+            border-radius: 8px;
+            margin-bottom: 16px;
+        }
+
+        .tags-wrapper {
+            margin-bottom: 20px;
+        }
+
+        .suggestion-tag {
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        .generate-btn {
+            border-radius: 8px;
+            height: 45px;
+        }
+    }
+
+    /* 右侧代码预览卡片 (暗色模式) */
+    .preview-card {
+        flex: 1.2;
+        border-radius: 12px;
+        background: #0d1117; // GitHub Dark Dimmed 背景色
+        border: none;
+
+        /* 覆盖 AntD Card 标题颜色 */
+        .ant-card-head {
+            border-bottom: 1px solid #30363d;
+
+            .ant-card-head-title {
+                color: #e6edf3;
+            }
+        }
+
+        .copy-btn {
+            color: #58a6ff;
+
+            &:hover {
+                color: #79c0ff;
+            }
+        }
+
+        .code-viewport {
+            min-height: 350px;
+            position: relative;
+            background: #1e1e1e;
+            border-radius: 8px;
+            overflow: hidden;
+
+        }
+
+        /* 加载中状态 */
+        .loading-spin {
+            position: absolute;
+            top: 40%;
+            left: 50%;
+            transform: translateX(-50%);
+
+            // 覆盖 AntD Spin 文字颜色
+            .ant-spin-text {
+                color: #8b949e;
+                text-shadow: none;
+            }
+        }
+
+        /* 代码块样式 */
+        .code-content {
+            margin: 0;
+            padding: 20px;
+            color: #d4d4d4;
+            font-family: "Fira Code", "Consolas", monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+
+        /* 空状态样式 */
+        .empty-state {
+            margin-top: 60px;
+
+            .ant-empty-description {
+                color: #8b949e;
+            }
+        }
+    }
+}

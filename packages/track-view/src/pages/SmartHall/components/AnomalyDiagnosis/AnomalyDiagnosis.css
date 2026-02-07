@@ -1,0 +1,77 @@
+.anomaly-diagnosis-container {
+  /* 可以在这里添加容器的 padding 或 margin，如果父级没处理的话 */
+}
+.anomaly-diagnosis-container .diagnosis-card {
+  /* 顶部仪表盘区域 */
+  /* 异常列表区域 */
+}
+.anomaly-diagnosis-container .diagnosis-card .score-section {
+  margin-bottom: 24px;
+}
+.anomaly-diagnosis-container .diagnosis-card .score-section .score-col {
+  text-align: center;
+  border-right: 1px solid #f0f0f0;
+}
+.anomaly-diagnosis-container .diagnosis-card .score-section .score-col .score-text {
+  font-size: 24px;
+  font-weight: bold;
+}
+.anomaly-diagnosis-container .diagnosis-card .score-section .score-col .score-label {
+  margin-top: 8px;
+  color: #666;
+}
+.anomaly-diagnosis-container .diagnosis-card .score-section .diagnosis-summary {
+  margin-top: 16px;
+  padding: 8px 12px;
+  background: #fafafa;
+  border-radius: 4px;
+  color: #595959;
+  /* 加载中的文字颜色 */
+}
+.anomaly-diagnosis-container .diagnosis-card .score-section .diagnosis-summary .loading-text {
+  color: #1890ff;
+}
+.anomaly-diagnosis-container .diagnosis-card .issue-list {
+  /* 针对不同级别的图标颜色定义 */
+}
+.anomaly-diagnosis-container .diagnosis-card .issue-list .issue-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  /* 图标/标签与标题的间距 */
+}
+.anomaly-diagnosis-container .diagnosis-card .issue-list .icon-error {
+  color: #ff4d4f;
+  font-size: 20px;
+}
+.anomaly-diagnosis-container .diagnosis-card .issue-list .icon-warning {
+  color: #faad14;
+  font-size: 20px;
+}
+.anomaly-diagnosis-container .diagnosis-card .issue-list .icon-info {
+  color: #1890ff;
+  font-size: 20px;
+}
+/* 抽屉详情样式  */
+.diagnosis-drawer-content {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.diagnosis-drawer-content .scope-tag {
+  margin-top: 8px;
+}
+.diagnosis-drawer-content .suggestion-card {
+  background: #f6ffed;
+  border-color: #b7eb8f;
+}
+.diagnosis-drawer-content .suggestion-card .ant-card-body {
+  padding: 12px;
+}
+.diagnosis-drawer-content .meta-info {
+  text-align: right;
+  color: #999;
+  font-size: 12px;
+  margin-top: auto;
+  /* 推到底部 */
+}
