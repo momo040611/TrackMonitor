@@ -1,0 +1,252 @@
+.data-display-container {
+  padding: 24px;
+  background: #f5f5f5;
+  min-height: 100vh;
+}
+
+.data-display-header {
+  margin-bottom: 24px;
+}
+
+.data-display-header h1 {
+  font-size: 24px;
+  font-weight: 600;
+  color: #333;
+  margin: 0;
+}
+
+.data-display-content {
+  background: #fff;
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.09);
+}
+
+.data-display-tabs .ant-tabs-nav {
+  margin-bottom: 24px;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .data-display-container {
+    padding: 16px;
+  }
+
+  .data-display-content {
+    padding: 16px;
+  }
+
+  .data-display-header h1 {
+    font-size: 20px;
+  }
+}
+
+/* 卡片样式优化 */
+.data-display-content .ant-card {
+  margin-bottom: 16px;
+}
+
+/* 表格样式优化 */
+.data-display-content .ant-table {
+  margin-bottom: 16px;
+}
+
+/* 筛选区域样式 */
+.data-display-content .ant-card-body {
+  padding: 16px;
+}
+
+/* 标签页样式 */
+.data-display-tabs .ant-tabs-tab {
+  font-size: 14px;
+  padding: 10px 16px;
+}
+
+.data-display-tabs .ant-tabs-tab-active .ant-tabs-tab-btn {
+  font-weight: 600;
+  color: #1890ff;
+}
+
+/* 按钮样式优化 */
+.data-display-content .ant-btn {
+  margin-right: 8px;
+}
+
+/* 统计卡片样式 */
+.data-display-content .ant-card-body {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* 告警卡片样式 */
+.data-display-content .ant-card .ant-card-body {
+  padding: 20px;
+}
+
+/* 数据可视化图表样式 */
+.data-display-content .echarts-for-react {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* 加载动画样式 */
+.data-display-content .ant-spin {
+  margin: 40px 0;
+}
+
+/* 空状态样式 */
+.data-display-content .ant-empty {
+  margin: 40px 0;
+}
+
+/* 分页样式 */
+.data-display-content .ant-pagination {
+  margin-top: 16px;
+  text-align: right;
+}
+
+/* 表单样式 */
+.data-display-content .ant-form {
+  margin-bottom: 16px;
+}
+
+.data-display-content .ant-form-item {
+  margin-bottom: 16px;
+}
+
+/* 时间选择器样式 */
+.data-display-content .ant-picker {
+  margin-right: 8px;
+}
+
+/* 选择器样式 */
+.data-display-content .ant-select {
+  margin-right: 8px;
+}
+
+/* 输入框样式 */
+.data-display-content .ant-input {
+  margin-right: 8px;
+}
+
+/* 标签样式 */
+.data-display-content .ant-tag {
+  margin-right: 4px;
+}
+
+/* 徽章样式 */
+.data-display-content .ant-badge {
+  margin-right: 8px;
+}
+
+/* 警告提示样式 */
+.data-display-content .ant-alert {
+  margin-bottom: 16px;
+}
+
+/* 空间样式 */
+.data-display-content .ant-space {
+  margin-bottom: 16px;
+}
+
+/* 行和列样式 */
+.data-display-content .ant-row {
+  margin-bottom: 16px;
+}
+
+.data-display-content .ant-col {
+  margin-bottom: 16px;
+}
+
+/* 滚动条样式 */
+.data-display-content ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.data-display-content ::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.data-display-content ::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+.data-display-content ::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* 动画效果 */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.data-display-content {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+/* 卡片悬停效果 */
+.data-display-content .ant-card {
+  transition: all 0.3s ease;
+}
+
+.data-display-content .ant-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+}
+
+/* 按钮悬停效果 */
+.data-display-content .ant-btn {
+  transition: all 0.3s ease;
+}
+
+/* 输入框和选择器聚焦效果 */
+.data-display-content .ant-input:focus,
+.data-display-content .ant-select-focused .ant-select-selector,
+.data-display-content .ant-picker-focused {
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2) !important;
+}
+
+/* 标签页切换动画 */
+.data-display-tabs .ant-tabs-content {
+  transition: all 0.3s ease;
+}
+
+/* 响应式布局调整 */
+@media (max-width: 576px) {
+  .data-display-container {
+    padding: 8px;
+  }
+
+  .data-display-content {
+    padding: 8px;
+  }
+
+  .data-display-header h1 {
+    font-size: 18px;
+  }
+
+  .data-display-tabs .ant-tabs-tab {
+    font-size: 12px;
+    padding: 8px 12px;
+  }
+
+  .data-display-content .ant-btn {
+    font-size: 12px;
+    padding: 4px 8px;
+  }
+
+  .data-display-content .ant-card-body {
+    padding: 12px;
+  }
+}

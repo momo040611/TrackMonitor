@@ -72,4 +72,41 @@ export const api = {
   enableTracking: (id: string) => {
     return request.post(`/tracking/enable/${id}`)
   },
+
+  // AI 分析相关接口
+  getAiAnalysisData: (params?: { projectId: string; timeRange: string; analysisType: string }) => {
+    return request.get('/ai/analysis', { params })
+  },
+
+  // 发送 AI 查询
+  sendAiQuery: (data: { query: string; projectId: string }) => {
+    return request.post('/ai/query', data)
+  },
+
+  // 获取告警数据
+  getAlarmData: (params?: {
+    projectId: string
+    status?: string
+    level?: string
+    type?: string
+    page?: number
+    pageSize?: number
+  }) => {
+    return request.get('/alarm/list', { params })
+  },
+
+  // 标记告警为已读
+  markAlarmAsRead: (alarmId: string) => {
+    return request.post(`/alarm/read/${alarmId}`)
+  },
+
+  // 处理告警
+  handleAlarm: (alarmId: string, data: { action: string; remark?: string }) => {
+    return request.post(`/alarm/handle/${alarmId}`, data)
+  },
+
+  // 获取告警统计数据
+  getAlarmStatistics: (params?: { projectId: string; timeRange: string }) => {
+    return request.get('/alarm/statistics', { params })
+  },
 }
