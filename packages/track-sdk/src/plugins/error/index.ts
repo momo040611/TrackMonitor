@@ -1,6 +1,7 @@
 import type { TrackerPlugin, CoreContext, TrackerEvent } from '../../core'
 import { initJsError, initPromiseError, initResourceError, initHttpError } from './handlers'
-import { ErrorType, ErrorPluginOptions, ErrorInfo } from './types'
+import { ErrorType } from './types'
+import type { ErrorPluginOptions, ErrorInfo } from './types'
 
 /**
  * 创建错误插件的函数式实现
