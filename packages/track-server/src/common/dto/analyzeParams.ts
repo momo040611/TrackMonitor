@@ -1,10 +1,6 @@
-import { IsOptional, IsString, IsInt, Min } from 'class-validator'
+import { IsOptional, IsString } from 'class-validator'
 
-export class getEventParams {
-  @IsOptional()
-  @IsString()
-  type?: string
-
+export class AnalyzeParams {
   @IsString()
   @IsOptional()
   time: string
@@ -16,8 +12,4 @@ export class getEventParams {
   @IsOptional()
   @IsString()
   endTime?: string // 绝对时间区间-结束：ISO 8601 格式
-
-  @IsInt()
-  @IsOptional()
-  limit?: number
 }

@@ -2,12 +2,14 @@ import { Injectable } from '@nestjs/common'
 import { BusinessService } from '../business/business.service'
 import { EventDto } from '../common/dto/event'
 import { StorageService } from '../storage/storage.service'
+import { AnalyzeWokerService } from '../business/ai/wokers/analyzeWoker.service'
 
 @Injectable()
 export class ProcessingService {
   constructor(
     private readonly businessService: BusinessService,
-    private readonly storageService: StorageService
+    private readonly storageService: StorageService,
+    private readonly analyzeWokerService: AnalyzeWokerService
   ) {}
 
   async processEvent(event: EventDto): Promise<void> {
@@ -25,15 +27,30 @@ export class ProcessingService {
         console.warn(`Unknown event type: ${event.type}`)
     }
   }
-
-  // 修复：移除 Number(time)，直接传递 string 类型的 time（适配 ms 库）
-  async getEvents(type: string, time: string, limit: number): Promise<any[]> {
-    // 关键修改：time 不再转数字，直接传原始字符串
-    return await this.storageService.getEvents({ type, time, limit })
+  // 简单查询 不走业务层
+  async getEvents(
+    type: string,
+    time: string,
+    startTime?: string,
+    endTime?: string,
+    limit?: number
+  ): Promise<any[]> {
+    return await this.storageService.getEvents({
+      type,
+      time: Number(time),
+      startTime,
+      endTime,
+      limit,
+    })
   }
 
   // 获取所有事件
   async getEventList(type: string): Promise<any[]> {
     return await this.storageService.getEvents({ type })
+  }
+
+  // 分析事件
+  async analyzeEvent(type: string, time: string, startTime?: string, endTime?: string) {
+    return await this.analyzeWokerService.analyzeEvent({ type, time, startTime, endTime })
   }
 }
