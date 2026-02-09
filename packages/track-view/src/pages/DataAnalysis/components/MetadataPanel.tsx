@@ -1,4 +1,4 @@
-import React, { useReducer } from 'react'
+import React, { useReducer, useEffect } from 'react'
 import {
   Card,
   Tabs,
@@ -14,12 +14,7 @@ import {
 } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { metadataInitialState, metadataReducer } from '../../../store/modules/metadata'
-import {
-  loadInitialMetadata,
-  type DataDictionaryItem,
-  type TagItem,
-  type ConfigItem,
-} from '../services/metadata'
+import type { DataDictionaryItem, TagItem, ConfigItem } from '../services/metadata'
 import './MetadataPanel.less'
 
 const { Title, Text } = Typography
@@ -53,14 +48,28 @@ const configColumns: ColumnsType<ConfigItem> = [
 ]
 
 const MetadataPanel: React.FC = () => {
-  const [state, dispatch] = useReducer(metadataReducer, metadataInitialState, () => ({
-    ...metadataInitialState,
-    ...loadInitialMetadata(),
-  }))
+  const [state, dispatch] = useReducer(metadataReducer, metadataInitialState)
 
   const [dictForm] = Form.useForm<DataDictionaryItem>()
   const [tagForm] = Form.useForm<TagItem>()
   const [configForm] = Form.useForm<ConfigItem>()
+
+  // 加载初始元数据
+  useEffect(() => {
+    const loadMetadata = async () => {
+      try {
+        const response = await fetch('/api/analysis/metadata')
+        const result = await response.json()
+        if (result.code === 200) {
+          dispatch({ type: 'setAll', payload: result.data })
+        }
+      } catch (error) {
+        console.error('获取元数据失败:', error)
+      }
+    }
+
+    loadMetadata()
+  }, [])
 
   const handleAddDictionary = (values: DataDictionaryItem) => {
     dispatch({ type: 'addDictionary', payload: values })

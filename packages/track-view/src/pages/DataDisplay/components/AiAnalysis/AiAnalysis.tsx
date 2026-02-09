@@ -38,14 +38,13 @@ const AiAnalysis = () => {
       setIsLoading(true)
 
       // 获取 AI 分析数据
-      const analysisRes = await api.getAiAnalysisData({
-        projectId: selectedProject,
-        analysisType,
-        timeRange,
-      })
+      const response = await fetch(
+        `/api/ai/analysis?projectId=${selectedProject}&analysisType=${analysisType}&timeRange=${timeRange}`
+      )
+      const result = await response.json()
 
       setAnalysisData(
-        analysisRes.data || {
+        result.data || {
           trends: [],
           anomalies: [],
           predictions: [],
@@ -71,12 +70,19 @@ const AiAnalysis = () => {
       setIsAnalyzing(true)
 
       // 发送 AI 查询
-      const aiRes = await api.sendAiQuery({
-        projectId: selectedProject,
-        query: userQuery,
+      const response = await fetch('/api/ai/send-query', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          projectId: selectedProject,
+          query: userQuery,
+        }),
       })
+      const result = await response.json()
 
-      setAiResponse(aiRes.data?.response || '')
+      setAiResponse(result.data?.response || '')
     } catch (error) {
       console.error('发送 AI 查询失败:', error)
       message.error('发送 AI 查询失败，请稍后重试')

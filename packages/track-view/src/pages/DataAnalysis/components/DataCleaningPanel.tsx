@@ -24,19 +24,22 @@ const DataCleaningPanel: React.FC<DataCleaningPanelProps> = ({ onCleanedChange }
 
   const currentRules: CleaningRule = state.rules ?? buildDefaultRules()
 
-  const handleLoadSample = () => {
-    const sample = [
-      { id: '1', userId: 'u1', event: 'click', value: 10, timestamp: '2025-01-01T10:00:00Z' },
-      { id: '1', userId: 'u1', event: 'click', value: 10, timestamp: '2025-01-01T10:00:00Z' },
-      { id: '2', userId: 'u2', event: 'view', value: null, timestamp: 'invalid' },
-      { id: '3', userId: 'u3', event: 'click', value: 5, timestamp: '2025-01-01T11:00:00Z' },
-    ]
-    dispatch({ type: 'setRawData', payload: sample })
-    dispatch({ type: 'setRules', payload: currentRules })
-    const result = applyCleaningPipeline(sample, currentRules)
-    dispatch({ type: 'setCleaningResult', payload: result })
-    if (onCleanedChange) {
-      onCleanedChange(result.cleaned)
+  const handleLoadSample = async () => {
+    try {
+      const response = await fetch('/api/analysis/sample-data')
+      const result = await response.json()
+      if (result.code === 200) {
+        const sample = result.data
+        dispatch({ type: 'setRawData', payload: sample })
+        dispatch({ type: 'setRules', payload: currentRules })
+        const cleaningResult = applyCleaningPipeline(sample, currentRules)
+        dispatch({ type: 'setCleaningResult', payload: cleaningResult })
+        if (onCleanedChange) {
+          onCleanedChange(cleaningResult.cleaned)
+        }
+      }
+    } catch (error) {
+      console.error('获取示例数据失败:', error)
     }
   }
 

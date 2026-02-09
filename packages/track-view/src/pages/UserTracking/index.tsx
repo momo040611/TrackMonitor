@@ -25,11 +25,13 @@ const UserTracking: React.FC<UserTrackingProps> = () => {
 
   const initTracker = () => {
     if (!trackerRef.current) {
+      // 先创建 tracker 实例
       trackerRef.current = createTracker()
 
-      trackerRef.current.use(createBehaviorPlugin())
-      trackerRef.current.use(createErrorPlugin())
-      trackerRef.current.use(createPerformancePlugin())
+      // 然后将 tracker 实例传递给各个插件
+      trackerRef.current.use(createBehaviorPlugin({ tracker: trackerRef.current }))
+      trackerRef.current.use(createErrorPlugin({ tracker: trackerRef.current }))
+      trackerRef.current.use(createPerformancePlugin({ tracker: trackerRef.current }))
     }
   }
 
@@ -97,256 +99,265 @@ const UserTracking: React.FC<UserTrackingProps> = () => {
   }, [isTracking])
 
   return (
-    <div
-      style={{
-        padding: '24px',
-        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-      }}
-    >
-      <div
-        style={{
-          backgroundColor: '#fff',
-          borderRadius: '8px',
-          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
-          padding: '24px',
-          marginBottom: '24px',
-        }}
-      >
-        <h2 style={{ margin: '0 0 24px 0' }}>用户行为追踪</h2>
-
-        <div style={{ marginBottom: '24px' }}>
-          <button
-            style={{
-              padding: '8px 16px',
-              borderRadius: '4px',
-              border: '1px solid #d9d9d9',
-              backgroundColor: isTracking ? '#fff' : '#1890ff',
-              color: isTracking ? '#333' : '#fff',
-              cursor: 'pointer',
-              marginRight: '8px',
-            }}
-            onClick={isTracking ? stopTracking : startTracking}
-          >
-            {isTracking ? '停止追踪' : '开始追踪'}
-          </button>
-          <button
-            style={{
-              padding: '8px 16px',
-              borderRadius: '4px',
-              border: '1px solid #d9d9d9',
-              backgroundColor: '#fff',
-              color: '#333',
-              cursor: !isTracking ? 'not-allowed' : 'pointer',
-              opacity: !isTracking ? 0.5 : 1,
-            }}
-            onClick={() => setTrackingData([])}
-            disabled={!isTracking}
-          >
-            清空数据
-          </button>
-        </div>
-
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-            gap: '16px',
-            marginBottom: '24px',
-          }}
-        >
-          <div
-            style={{
-              backgroundColor: '#f5f5f5',
-              padding: '16px',
-              borderRadius: '8px',
-            }}
-          >
-            <h4 style={{ margin: '0 0 8px 0' }}>当前平台</h4>
-            <p style={{ margin: '0', fontSize: '24px', fontWeight: 'bold' }}>
-              {activePlatform === 'web'
-                ? '网页'
-                : activePlatform === 'mini-program'
-                  ? '小程序'
-                  : activePlatform === 'nodejs'
-                    ? 'Node.js'
-                    : 'Electron'}
-            </p>
-            <p style={{ margin: '4px 0 0 0', color: '#666' }}>平台</p>
-          </div>
-          <div
-            style={{
-              backgroundColor: '#f5f5f5',
-              padding: '16px',
-              borderRadius: '8px',
-            }}
-          >
-            <h4 style={{ margin: '0 0 8px 0' }}>事件数量</h4>
-            <p style={{ margin: '0', fontSize: '24px', fontWeight: 'bold' }}>
-              {trackingData.length}
-            </p>
-            <p style={{ margin: '4px 0 0 0', color: '#666' }}>事件</p>
-          </div>
-          <div
-            style={{
-              backgroundColor: '#f5f5f5',
-              padding: '16px',
-              borderRadius: '8px',
-            }}
-          >
-            <h4 style={{ margin: '0 0 8px 0' }}>追踪状态</h4>
-            <p
+    <div>
+      <div className="pageContent">
+        <h2 className="pageTitle">用户行为追踪</h2>
+        <p style={{ fontSize: '16px', lineHeight: '1.5', color: '#666', marginBottom: '24px' }}>
+          用户行为追踪页面，用于追踪和分析用户在不同平台上的行为数据。
+        </p>
+        <div>
+          <div style={{ marginBottom: '24px' }}>
+            <button
               style={{
-                margin: '0',
-                fontSize: '24px',
-                fontWeight: 'bold',
-                color: isTracking ? '#52c41a' : '#faad14',
+                padding: '8px 16px',
+                borderRadius: '4px',
+                border: '1px solid #d9d9d9',
+                backgroundColor: isTracking ? '#fff' : '#1890ff',
+                color: isTracking ? '#333' : '#fff',
+                cursor: 'pointer',
+                marginRight: '8px',
+              }}
+              onClick={isTracking ? stopTracking : startTracking}
+            >
+              {isTracking ? '停止追踪' : '开始追踪'}
+            </button>
+            <button
+              style={{
+                padding: '8px 16px',
+                borderRadius: '4px',
+                border: '1px solid #d9d9d9',
+                backgroundColor: '#fff',
+                color: '#333',
+                cursor: !isTracking ? 'not-allowed' : 'pointer',
+                opacity: !isTracking ? 0.5 : 1,
+              }}
+              onClick={() => setTrackingData([])}
+              disabled={!isTracking}
+            >
+              清空数据
+            </button>
+          </div>
+
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+              gap: '16px',
+              marginBottom: '24px',
+            }}
+          >
+            <div
+              style={{
+                backgroundColor: '#f5f5f5',
+                padding: '16px',
+                borderRadius: '8px',
               }}
             >
-              {isTracking ? '活跃' : '非活跃'}
-            </p>
-          </div>
-        </div>
-
-        <div style={{ marginBottom: '24px' }}>
-          <div
-            style={{
-              display: 'flex',
-              borderBottom: '1px solid #e8e8e8',
-              marginBottom: '16px',
-            }}
-          >
-            {['web', 'mini-program', 'nodejs', 'electron'].map((platform) => (
-              <button
-                key={platform}
-                style={{
-                  padding: '8px 16px',
-                  border: 'none',
-                  backgroundColor: 'transparent',
-                  cursor: 'pointer',
-                  borderBottom: activePlatform === platform ? '2px solid #1890ff' : 'none',
-                  color: activePlatform === platform ? '#1890ff' : '#333',
-                }}
-                onClick={() => setActivePlatform(platform)}
-              >
-                {platform === 'web'
+              <h4 style={{ margin: '0 0 8px 0' }}>当前平台</h4>
+              <p style={{ margin: '0', fontSize: '24px', fontWeight: 'bold' }}>
+                {activePlatform === 'web'
                   ? '网页'
-                  : platform === 'mini-program'
+                  : activePlatform === 'mini-program'
                     ? '小程序'
-                    : platform === 'nodejs'
+                    : activePlatform === 'nodejs'
                       ? 'Node.js'
                       : 'Electron'}
-              </button>
-            ))}
+              </p>
+              <p style={{ margin: '4px 0 0 0', color: '#666' }}>平台</p>
+            </div>
+            <div
+              style={{
+                backgroundColor: '#f5f5f5',
+                padding: '16px',
+                borderRadius: '8px',
+              }}
+            >
+              <h4 style={{ margin: '0 0 8px 0' }}>事件数量</h4>
+              <p style={{ margin: '0', fontSize: '24px', fontWeight: 'bold' }}>
+                {trackingData.length}
+              </p>
+              <p style={{ margin: '4px 0 0 0', color: '#666' }}>事件</p>
+            </div>
+            <div
+              style={{
+                backgroundColor: '#f5f5f5',
+                padding: '16px',
+                borderRadius: '8px',
+              }}
+            >
+              <h4 style={{ margin: '0 0 8px 0' }}>追踪状态</h4>
+              <p
+                style={{
+                  margin: '0',
+                  fontSize: '24px',
+                  fontWeight: 'bold',
+                  color: isTracking ? '#52c41a' : '#faad14',
+                }}
+              >
+                {isTracking ? '活跃' : '非活跃'}
+              </p>
+            </div>
           </div>
 
-          {activePlatform === 'web' && (
-            <WebTracking
-              isTracking={isTracking}
-              addData={addTrackingData}
-              trackerRef={trackerRef}
-            />
-          )}
-          {activePlatform === 'mini-program' && (
-            <MiniProgramTracking
-              isTracking={isTracking}
-              addData={addTrackingData}
-              trackerRef={trackerRef}
-            />
-          )}
-          {activePlatform === 'nodejs' && (
-            <NodeJSTracking
-              isTracking={isTracking}
-              addData={addTrackingData}
-              trackerRef={trackerRef}
-            />
-          )}
-          {activePlatform === 'electron' && (
-            <ElectronTracking
-              isTracking={isTracking}
-              addData={addTrackingData}
-              trackerRef={trackerRef}
-            />
-          )}
-        </div>
+          <div style={{ marginBottom: '24px' }}>
+            <div
+              style={{
+                display: 'flex',
+                borderBottom: '1px solid #e8e8e8',
+                marginBottom: '16px',
+              }}
+            >
+              {['web', 'mini-program', 'nodejs', 'electron'].map((platform) => (
+                <button
+                  key={platform}
+                  style={{
+                    padding: '8px 16px',
+                    border: 'none',
+                    backgroundColor: 'transparent',
+                    cursor: 'pointer',
+                    borderBottom: activePlatform === platform ? '2px solid #1890ff' : 'none',
+                    color: activePlatform === platform ? '#1890ff' : '#333',
+                  }}
+                  onClick={() => setActivePlatform(platform)}
+                >
+                  {platform === 'web'
+                    ? '网页'
+                    : platform === 'mini-program'
+                      ? '小程序'
+                      : platform === 'nodejs'
+                        ? 'Node.js'
+                        : 'Electron'}
+                </button>
+              ))}
+            </div>
 
-        <div>
-          <h3 style={{ margin: '0 0 16px 0' }}>追踪事件</h3>
-          <div
-            style={{
-              overflowX: 'auto',
-              maxHeight: '400px',
-              border: '1px solid #e8e8e8',
-              borderRadius: '4px',
-            }}
-          >
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead style={{ backgroundColor: '#fafafa' }}>
-                <tr>
-                  <th
-                    style={{ padding: '8px', borderBottom: '1px solid #e8e8e8', textAlign: 'left' }}
-                  >
-                    类型
-                  </th>
-                  <th
-                    style={{ padding: '8px', borderBottom: '1px solid #e8e8e8', textAlign: 'left' }}
-                  >
-                    时间戳
-                  </th>
-                  <th
-                    style={{ padding: '8px', borderBottom: '1px solid #e8e8e8', textAlign: 'left' }}
-                  >
-                    平台
-                  </th>
-                  <th
-                    style={{ padding: '8px', borderBottom: '1px solid #e8e8e8', textAlign: 'left' }}
-                  >
-                    详情
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {trackingData.map((item) => (
-                  <tr key={item.key} style={{ borderBottom: '1px solid #f0f0f0' }}>
-                    <td style={{ padding: '8px' }}>
-                      <span
-                        style={{
-                          display: 'inline-block',
-                          padding: '2px 8px',
-                          borderRadius: '12px',
-                          backgroundColor: '#e6f7ff',
-                          color: '#1890ff',
-                          fontSize: '12px',
-                        }}
-                      >
-                        {item.type}
-                      </span>
-                    </td>
-                    <td style={{ padding: '8px' }}>{new Date(item.timestamp).toLocaleString()}</td>
-                    <td style={{ padding: '8px' }}>
-                      <span
-                        style={{
-                          display: 'inline-block',
-                          padding: '2px 8px',
-                          borderRadius: '12px',
-                          backgroundColor: '#f6ffed',
-                          color: '#52c41a',
-                          fontSize: '12px',
-                        }}
-                      >
-                        {item.platform === 'web'
-                          ? '网页'
-                          : item.platform === 'mini-program'
-                            ? '小程序'
-                            : item.platform === 'nodejs'
-                              ? 'Node.js'
-                              : 'Electron'}
-                      </span>
-                    </td>
-                    <td style={{ padding: '8px' }}>{item.details}</td>
+            {activePlatform === 'web' && (
+              <WebTracking
+                isTracking={isTracking}
+                addData={addTrackingData}
+                trackerRef={trackerRef}
+              />
+            )}
+            {activePlatform === 'mini-program' && (
+              <MiniProgramTracking
+                isTracking={isTracking}
+                addData={addTrackingData}
+                trackerRef={trackerRef}
+              />
+            )}
+            {activePlatform === 'nodejs' && (
+              <NodeJSTracking
+                isTracking={isTracking}
+                addData={addTrackingData}
+                trackerRef={trackerRef}
+              />
+            )}
+            {activePlatform === 'electron' && (
+              <ElectronTracking
+                isTracking={isTracking}
+                addData={addTrackingData}
+                trackerRef={trackerRef}
+              />
+            )}
+          </div>
+
+          <div>
+            <h3 style={{ margin: '0 0 16px 0' }}>追踪事件</h3>
+            <div
+              style={{
+                overflowX: 'auto',
+                maxHeight: '400px',
+                border: '1px solid #e8e8e8',
+                borderRadius: '4px',
+              }}
+            >
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead style={{ backgroundColor: '#fafafa' }}>
+                  <tr>
+                    <th
+                      style={{
+                        padding: '8px',
+                        borderBottom: '1px solid #e8e8e8',
+                        textAlign: 'left',
+                      }}
+                    >
+                      类型
+                    </th>
+                    <th
+                      style={{
+                        padding: '8px',
+                        borderBottom: '1px solid #e8e8e8',
+                        textAlign: 'left',
+                      }}
+                    >
+                      时间戳
+                    </th>
+                    <th
+                      style={{
+                        padding: '8px',
+                        borderBottom: '1px solid #e8e8e8',
+                        textAlign: 'left',
+                      }}
+                    >
+                      平台
+                    </th>
+                    <th
+                      style={{
+                        padding: '8px',
+                        borderBottom: '1px solid #e8e8e8',
+                        textAlign: 'left',
+                      }}
+                    >
+                      详情
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {trackingData.map((item) => (
+                    <tr key={item.key} style={{ borderBottom: '1px solid #f0f0f0' }}>
+                      <td style={{ padding: '8px' }}>
+                        <span
+                          style={{
+                            display: 'inline-block',
+                            padding: '2px 8px',
+                            borderRadius: '12px',
+                            backgroundColor: '#e6f7ff',
+                            color: '#1890ff',
+                            fontSize: '12px',
+                          }}
+                        >
+                          {item.type}
+                        </span>
+                      </td>
+                      <td style={{ padding: '8px' }}>
+                        {new Date(item.timestamp).toLocaleString()}
+                      </td>
+                      <td style={{ padding: '8px' }}>
+                        <span
+                          style={{
+                            display: 'inline-block',
+                            padding: '2px 8px',
+                            borderRadius: '12px',
+                            backgroundColor: '#f6ffed',
+                            color: '#52c41a',
+                            fontSize: '12px',
+                          }}
+                        >
+                          {item.platform === 'web'
+                            ? '网页'
+                            : item.platform === 'mini-program'
+                              ? '小程序'
+                              : item.platform === 'nodejs'
+                                ? 'Node.js'
+                                : 'Electron'}
+                        </span>
+                      </td>
+                      <td style={{ padding: '8px' }}>{item.details}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>
