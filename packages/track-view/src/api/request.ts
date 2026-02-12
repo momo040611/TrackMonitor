@@ -3,110 +3,140 @@ import request from '../utils/request'
 
 // API 接口定义
 export const api = {
-  // 获取全局概览数据
-  getOverviewData: (params?: { projectId: string; timeRange: string }) => {
-    return request.get('/analytics/overview', { params })
+  // 认证相关接口
+  login: (data: { username: string; password: string }) => {
+    return request.post('/user/login', data)
   },
 
-  // 获取趋势数据
-  getTrendData: (params?: { projectId: string; timeRange: string; metrics: string[] }) => {
-    return request.get('/analytics/trend', { params })
+  register: (data: { username: string; password: string }) => {
+    return request.post('/user/register', data)
   },
 
-  // 获取类型分布数据
-  getTypeDistributionData: (params?: { projectId: string; timeRange: string }) => {
-    return request.get('/analytics/type-distribution', { params })
+  refreshToken: (data: any) => {
+    return request.post('/user/refresh', data)
   },
 
-  // 获取热门埋点数据
-  getTopTrackingData: (params?: { projectId: string; timeRange: string; limit: number }) => {
-    return request.get('/analytics/top-tracking', { params })
+  getUserInfo: (id: string) => {
+    return request.get(`/user/${id}`)
   },
 
-  // 获取转化漏斗数据
-  getFunnelData: (params?: { projectId: string; timeRange: string }) => {
-    return request.get('/analytics/funnel', { params })
+  // 性能和错误事件接口
+  getPerformanceData: (params?: { projectId: string; timeRange: string }) => {
+    return request.get('/gateway/getPerformance', { params })
   },
 
-  // 获取实时上报数据
-  getRealtimeData: (params?: { projectId: string }) => {
-    return request.get('/analytics/realtime', { params })
+  getErrorData: (params?: { projectId: string; timeRange: string }) => {
+    return request.get('/gateway/getError', { params })
   },
 
-  // 获取埋点配置列表
-  getTrackingList: (params?: { projectId: string; type?: string; status?: string }) => {
-    return request.get('/tracking/list', { params })
+  getUserBehaviorData: (params?: { projectId: string; timeRange: string }) => {
+    return request.get('/gateway/getUserBehavior', { params })
   },
 
-  // 获取埋点详情
-  getTrackingDetail: (id: string) => {
-    return request.get(`/tracking/detail/${id}`)
+  getAllEvents: (params?: { projectId: string; timeRange: string }) => {
+    return request.get('/gateway/getAll', { params })
   },
 
-  // 创建埋点
-  createTracking: (data: any) => {
-    return request.post('/tracking/create', data)
+  getCustomEvent: (params?: { projectId: string; eventType: string }) => {
+    return request.get('/gateway/getEvent', { params })
   },
 
-  // 更新埋点
-  updateTracking: (id: string, data: any) => {
-    return request.put(`/tracking/update/${id}`, data)
+  // AI 分析接口
+  analyzeAllEvents: (params?: { projectId: string; timeRange: string }) => {
+    return request.get('/gateway/analyzeAll', { params })
   },
 
-  // 删除埋点
-  deleteTracking: (id: string) => {
-    return request.delete(`/tracking/delete/${id}`)
+  analyzeErrorEvents: (params?: { projectId: string; timeRange: string }) => {
+    return request.get('/gateway/analyzeError', { params })
   },
 
-  // 发布埋点
-  publishTracking: (id: string) => {
-    return request.post(`/tracking/publish/${id}`)
+  analyzeUserBehaviorEvents: (params?: { projectId: string; timeRange: string }) => {
+    return request.get('/gateway/analyzeUserBehavior', { params })
   },
 
-  // 失效埋点
-  disableTracking: (id: string) => {
-    return request.post(`/tracking/disable/${id}`)
+  analyzePerformanceEvents: (params?: { projectId: string; timeRange: string }) => {
+    return request.get('/gateway/analyzePerformance', { params })
   },
 
-  // 恢复埋点
-  enableTracking: (id: string) => {
-    return request.post(`/tracking/enable/${id}`)
+  // 业务相关接口
+  reportEventData: (data: any) => {
+    return request.post('/processing/event', data)
   },
 
-  // AI 分析相关接口
-  getAiAnalysisData: (params?: { projectId: string; timeRange: string; analysisType: string }) => {
-    return request.get('/ai/analysis', { params })
+  getBusinessAnalysis: (params?: { projectId: string; timeRange: string }) => {
+    return request.get('/business/analysis', { params })
   },
 
-  // 发送 AI 查询
-  sendAiQuery: (data: { query: string; projectId: string }) => {
-    return request.post('/ai/query', data)
+  sendBusinessAlert: (data: any) => {
+    return request.post('/business/alert', data)
   },
 
-  // 获取告警数据
-  getAlarmData: (params?: {
-    projectId: string
-    status?: string
-    level?: string
-    type?: string
-    page?: number
-    pageSize?: number
-  }) => {
-    return request.get('/alarm/list', { params })
+  getUserBehaviorAnalysis: (params?: { projectId: string; timeRange: string }) => {
+    return request.get('/business/user-behavior', { params })
   },
 
-  // 标记告警为已读
-  markAlarmAsRead: (alarmId: string) => {
-    return request.post(`/alarm/read/${alarmId}`)
+  // AI 代码生成接口 (暂时保留，后续可根据后端实际接口调整)
+  generateCode: (data: { requirement: string }) => {
+    return request.post('/api/ai/generate-code', data)
   },
 
-  // 处理告警
-  handleAlarm: (alarmId: string, data: { action: string; remark?: string }) => {
-    return request.post(`/alarm/handle/${alarmId}`, data)
+  // 数据分析相关接口 (暂时保留，后续可根据后端实际接口调整)
+  getOverviewData: () => {
+    return request.get('/gateway/getAll')
   },
 
-  // 获取告警统计数据
-  getAlarmStatistics: (params?: { projectId: string; timeRange: string }) => {
-    return request.get('/alarm/statistics', { params })
+  getTrendData: () => {
+    return request.get('/gateway/getAll')
+  },
+
+  getTypeDistributionData: () => {
+    return request.get('/gateway/getAll')
+  },
+
+  getRealtimeData: () => {
+    return request.get('/gateway/getAll')
+  },
+
+  // 埋点配置相关接口
+  tracking: {
+    // 获取埋点列表
+    getList: () => {
+      return request.get('/api/tracking/list')
+    },
+
+    // 新增埋点
+    create: (data: any) => {
+      return request.post('/api/tracking/create', data)
+    },
+
+    // 编辑埋点
+    update: (data: any) => {
+      return request.put('/api/tracking/update', data)
+    },
+
+    // 发布埋点
+    publish: (data: { ids: string[] }) => {
+      return request.post('/api/tracking/publish', data)
+    },
+
+    // 失效埋点
+    disable: (data: { ids: string[] }) => {
+      return request.post('/api/tracking/disable', data)
+    },
+
+    // 删除埋点
+    delete: (data: { ids: string[] }) => {
+      return request.delete('/api/tracking/delete', { data })
+    },
+
+    // 导入配置
+    import: (data: any) => {
+      return request.post('/api/tracking/import', data)
+    },
+
+    // 导出配置
+    export: () => {
+      return request.get('/api/tracking/export')
+    },
   },
 }

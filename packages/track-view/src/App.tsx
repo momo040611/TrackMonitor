@@ -1,5 +1,6 @@
 import { AppProviders } from './context'
-import Router from './router.tsx'
+import { RouterProvider } from 'react-router-dom'
+import router from './router'
 import './App.css'
 import { useState, useEffect } from 'react'
 
@@ -61,7 +62,7 @@ function App() {
   return (
     <div className="App">
       <AppProviders>
-        <Router />
+        <RouterProvider router={router} />
       </AppProviders>
     </div>
   )

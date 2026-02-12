@@ -1,5 +1,18 @@
-import React, { useMemo, useReducer } from 'react'
-import { Card, Tabs, Table, Button, Space, Tag, Typography, Form, Switch, Checkbox } from 'antd'
+import React, { useMemo, useReducer, useState } from 'react'
+import {
+  Card,
+  Tabs,
+  Table,
+  Button,
+  Space,
+  Tag,
+  Typography,
+  Form,
+  Switch,
+  Checkbox,
+  Select,
+  message,
+} from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import type { DataCleaningState } from '../../../store/modules/dataCleaning'
 import { dataCleaningInitialState, dataCleaningReducer } from '../../../store/modules/dataCleaning'
@@ -11,6 +24,7 @@ import {
   type RawRecord,
   type CleanedRecord,
 } from '../services/data-cleaning'
+import { api } from '../../../api/request'
 import './DataCleaningPanel.less'
 
 const { Title, Text } = Typography
@@ -21,25 +35,63 @@ interface DataCleaningPanelProps {
 
 const DataCleaningPanel: React.FC<DataCleaningPanelProps> = ({ onCleanedChange }) => {
   const [state, dispatch] = useReducer(dataCleaningReducer, dataCleaningInitialState)
+  const [dataSource, setDataSource] = useState<string>('all')
 
   const currentRules: CleaningRule = state.rules ?? buildDefaultRules()
 
+  const dataSourceOptions = [
+    { value: 'all', label: '所有事件' },
+    { value: 'userBehavior', label: '用户行为事件' },
+    { value: 'performance', label: '性能事件' },
+    { value: 'error', label: '错误事件' },
+  ]
+
   const handleLoadSample = async () => {
     try {
-      const response = await fetch('/api/analysis/sample-data')
-      const result = await response.json()
-      if (result.code === 200) {
-        const sample = result.data
-        dispatch({ type: 'setRawData', payload: sample })
+      let result
+      const params = { projectId: 'default', timeRange: '24h' }
+
+      switch (dataSource) {
+        case 'all':
+          result = await api.getAllEvents(params)
+          break
+        case 'userBehavior':
+          result = await api.getUserBehaviorData(params)
+          break
+        case 'performance':
+          result = await api.getPerformanceData(params)
+          break
+        case 'error':
+          result = await api.getErrorData(params)
+          break
+        default:
+          result = await api.getAllEvents(params)
+      }
+
+      if (result.data && result.data.code === 200) {
+        const sample = result.data.data || []
+        // 转换数据格式以适应清洗管道
+        const formattedSample = sample.map((item: any, index: number) => ({
+          id: item.id || `event-${index}-${Date.now()}`,
+          userId: item.userId || item.user_id || `user-${Math.floor(Math.random() * 1000)}`,
+          event: item.event || item.type || 'unknown',
+          value: item.value || item.duration || item.count || 0,
+          timestamp: item.timestamp || Date.now(),
+        }))
+
+        dispatch({ type: 'setRawData', payload: formattedSample })
         dispatch({ type: 'setRules', payload: currentRules })
-        const cleaningResult = applyCleaningPipeline(sample, currentRules)
+        const cleaningResult = applyCleaningPipeline(formattedSample, currentRules)
         dispatch({ type: 'setCleaningResult', payload: cleaningResult })
         if (onCleanedChange) {
           onCleanedChange(cleaningResult.cleaned)
         }
+
+        message.success(`成功加载 ${formattedSample.length} 条数据`)
       }
     } catch (error) {
-      console.error('获取示例数据失败:', error)
+      console.error('获取数据失败:', error)
+      message.error('获取数据失败，请检查网络连接')
     }
   }
 
@@ -82,10 +134,19 @@ const DataCleaningPanel: React.FC<DataCleaningPanelProps> = ({ onCleanedChange }
       <Space className="data-cleaning-header" direction="vertical" size="small">
         <Title level={4}>数据清洗</Title>
         <Text>对原始埋点数据进行验证、去重、过滤和标准化，为后续聚合分析做准备。</Text>
-        <Space>
-          <Button type="primary" onClick={handleLoadSample}>
-            加载示例数据并执行清洗
-          </Button>
+        <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+          <Space size="middle">
+            <Select
+              value={dataSource}
+              onChange={setDataSource}
+              options={dataSourceOptions}
+              style={{ width: 200 }}
+              placeholder="选择数据源"
+            />
+            <Button type="primary" onClick={handleLoadSample}>
+              加载数据并执行清洗
+            </Button>
+          </Space>
           {state.result && (
             <Space size="small">
               <Tag color="blue">原始: {state.rawData.length}</Tag>

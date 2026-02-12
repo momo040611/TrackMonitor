@@ -11,6 +11,7 @@ import {
   FileTextOutlined,
   ExportOutlined,
 } from '@ant-design/icons'
+import { AiService } from '../../services/useAiAssistant'
 import './LogParser.less'
 
 const { Text } = Typography
@@ -78,22 +79,38 @@ export const LogParser: React.FC<Props> = ({ initialLog, onDispatch }) => {
     ai_summary: '检测到用户在 iOS 17 环境下启动视频播放失败，且伴随高延迟与 502 网关错误。', // 新增
   }
 
-  const handleSimulateParse = () => {
+  const handleSimulateParse = async () => {
     setLoading(true)
     setParseResult(null)
     setCurrentStep(0)
 
-    // 模拟处理流程
+    // 模拟处理流程的步骤更新
     setTimeout(() => setCurrentStep(1), 800) // 向量化
     setTimeout(() => setCurrentStep(2), 2000) // 大模型推理
     setTimeout(() => setCurrentStep(3), 3000) // 结构化
 
-    setTimeout(() => {
-      setLoading(false)
-      // setParseResult(JSON.stringify(mockResult, null, 2))
+    try {
+      // 调用后端接口获取日志解析数据
+      const result = await AiService.sendAiQuery(`解析以下日志：${inputText}`)
+
+      // 处理返回的数据
+      if (result && result.parsedData) {
+        setParseResult(result.parsedData)
+        message.success('日志解析完成')
+      } else {
+        // 如果没有数据，使用默认数据
+        setParseResult(mockResult)
+        message.success('日志解析完成 (使用默认数据)')
+      }
+    } catch (error) {
+      message.error('日志解析失败，请稍后重试')
+      console.error('日志解析失败:', error)
+
+      // 出错时使用默认数据
       setParseResult(mockResult)
-      message.success('日志解析完成')
-    }, 3500)
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleToDispatch = () => {

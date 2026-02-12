@@ -22,6 +22,7 @@ import {
   RightOutlined,
   CodeOutlined,
 } from '@ant-design/icons'
+import { AiService } from '../../services/useAiAssistant'
 import './RootCauseAnalysis.less'
 
 const { Title, Text } = Typography
@@ -74,54 +75,118 @@ export const RootCauseAnalysis: React.FC<Props> = ({ onAnalyzeLog }) => {
 
   const handleAnalyze = async () => {
     setLoading(true)
-    await new Promise((resolve) => setTimeout(resolve, 1500))
+    try {
+      // 调用后端接口获取根因分析数据
+      const analysisData = await AiService.getAiAnalysisData('root-cause-analysis')
 
-    const mockResponse: RootCauseResult[] = [
-      {
-        dimension: 'app_version',
-        value: '2.4.0-beta',
-        score: 95,
-        type: 'client',
-        description: '崩溃率激增，高度聚集于该内测版本',
-      },
-      {
-        dimension: 'db_instance',
-        value: 'rm-bp1x9... (主库)',
-        score: 88,
-        type: 'infrastructure',
-        description: 'CPU 使用率持续 99%，导致写入超时',
-      },
-      {
-        dimension: 'api_path',
-        value: '/api/v1/user/profile',
-        score: 72,
-        type: 'business',
-        description: '接口 P99 延迟超过 2s',
-      },
-      {
-        dimension: 'api_path',
-        value: '/api/v1/order/create',
-        score: 68,
-        type: 'business',
-        description: '下单接口偶发 502 错误',
-      },
-      {
-        dimension: 'region',
-        value: '华东-上海',
-        score: 45,
-        type: 'infrastructure',
-        description: '该区域网络抖动（置信度低）',
-      },
-      {
-        dimension: 'os',
-        value: 'Android 14',
-        score: 42,
-        type: 'client',
-        description: '特定系统版本兼容性问题',
-      },
-    ]
-    setResults(mockResponse.sort((a, b) => b.score - a.score))
-    setLoading(false)
+      // 处理返回的数据
+      if (analysisData && analysisData.results) {
+        setResults(
+          analysisData.results.sort((a: RootCauseResult, b: RootCauseResult) => b.score - a.score)
+        )
+        message.success('根因分析完成')
+      } else {
+        // 如果没有数据，使用默认数据
+        const mockResponse: RootCauseResult[] = [
+          {
+            dimension: 'app_version',
+            value: '2.4.0-beta',
+            score: 95,
+            type: 'client',
+            description: '崩溃率激增，高度聚集于该内测版本',
+          },
+          {
+            dimension: 'db_instance',
+            value: 'rm-bp1x9... (主库)',
+            score: 88,
+            type: 'infrastructure',
+            description: 'CPU 使用率持续 99%，导致写入超时',
+          },
+          {
+            dimension: 'api_path',
+            value: '/api/v1/user/profile',
+            score: 72,
+            type: 'business',
+            description: '接口 P99 延迟超过 2s',
+          },
+          {
+            dimension: 'api_path',
+            value: '/api/v1/order/create',
+            score: 68,
+            type: 'business',
+            description: '下单接口偶发 502 错误',
+          },
+          {
+            dimension: 'region',
+            value: '华东-上海',
+            score: 45,
+            type: 'infrastructure',
+            description: '该区域网络抖动（置信度低）',
+          },
+          {
+            dimension: 'os',
+            value: 'Android 14',
+            score: 42,
+            type: 'client',
+            description: '特定系统版本兼容性问题',
+          },
+        ]
+        setResults(mockResponse.sort((a, b) => b.score - a.score))
+        message.success('根因分析完成 (使用默认数据)')
+      }
+    } catch (error) {
+      message.error('根因分析失败，请稍后重试')
+      console.error('根因分析失败:', error)
+
+      // 出错时使用默认数据
+      const mockResponse: RootCauseResult[] = [
+        {
+          dimension: 'app_version',
+          value: '2.4.0-beta',
+          score: 95,
+          type: 'client',
+          description: '崩溃率激增，高度聚集于该内测版本',
+        },
+        {
+          dimension: 'db_instance',
+          value: 'rm-bp1x9... (主库)',
+          score: 88,
+          type: 'infrastructure',
+          description: 'CPU 使用率持续 99%，导致写入超时',
+        },
+        {
+          dimension: 'api_path',
+          value: '/api/v1/user/profile',
+          score: 72,
+          type: 'business',
+          description: '接口 P99 延迟超过 2s',
+        },
+        {
+          dimension: 'api_path',
+          value: '/api/v1/order/create',
+          score: 68,
+          type: 'business',
+          description: '下单接口偶发 502 错误',
+        },
+        {
+          dimension: 'region',
+          value: '华东-上海',
+          score: 45,
+          type: 'infrastructure',
+          description: '该区域网络抖动（置信度低）',
+        },
+        {
+          dimension: 'os',
+          value: 'Android 14',
+          score: 42,
+          type: 'client',
+          description: '特定系统版本兼容性问题',
+        },
+      ]
+      setResults(mockResponse.sort((a, b) => b.score - a.score))
+    } finally {
+      setLoading(false)
+    }
   }
 
   // 动态计算连线

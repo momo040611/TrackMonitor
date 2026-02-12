@@ -1,5 +1,5 @@
 import React from 'react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom'
 import { BarChartOutlined, LineChartOutlined, UserOutlined, RobotOutlined } from '@ant-design/icons'
 import { useAuth } from '../../context/auth-context'
 import './MainLayout.less'
@@ -11,7 +11,7 @@ interface MenuItem {
   path: string
 }
 
-const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+const MainLayout: React.FC = () => {
   const location = useLocation()
   const navigate = useNavigate()
   const { user, logout } = useAuth()
@@ -67,6 +67,40 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     logoutTimeoutRef.current = setTimeout(() => {
       setShowLogout(false)
     }, 500)
+  }
+
+  // 生成面包屑导航
+  const getBreadcrumbItems = () => {
+    const pathname = location.pathname
+    const items = []
+
+    // 只在非根路径时添加首页
+    if (pathname !== '/') {
+      items.push({ title: <Link to="/">首页</Link>, key: '/' })
+    }
+
+    // 根据当前路径添加对应的面包屑项
+    menuItems.forEach((item) => {
+      if (pathname.startsWith(item.path) && item.path !== '/') {
+        items.push({
+          title: <Link to={item.path}>{item.title}</Link>,
+          key: item.path,
+        })
+
+        // 处理子路径
+        if (pathname !== item.path) {
+          const subPath = pathname.replace(item.path, '')
+          if (subPath) {
+            items.push({
+              title: subPath.replace('/', '').replace(/-/g, ' '),
+              key: pathname,
+            })
+          }
+        }
+      }
+    })
+
+    return items
   }
 
   return (
@@ -129,7 +163,9 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             ))}
           </div>
         </div>
-        <div className="mainContent">{children}</div>
+        <div className="mainContent">
+          <Outlet />
+        </div>
       </div>
     </div>
   )

@@ -1,7 +1,7 @@
 // 在真实环境中，如果使用firebase这种第三方auth服务的话，本文件不需要开发者开发
 
 import type { User } from './types'
-import request from './utils/request'
+import { api } from './api/request'
 
 const localStorageKey = '__auth_provider_token__'
 
@@ -55,26 +55,32 @@ export const handleUserResponse = (response: any) => {
 }
 
 export const login = (data: { username: string; password: string }): Promise<User | null> => {
-  return request.post('/login', data).then(handleUserResponse)
+  return api.login(data).then(handleUserResponse)
 }
 
 export const register = (data: { username: string; password: string }): Promise<User | null> => {
-  return request.post('/register', data).then(handleUserResponse)
+  return api.register(data).then(handleUserResponse)
 }
 
 export const logout = async () => window.localStorage.removeItem(localStorageKey)
 
 export const checkUsername = (username: string): Promise<void> => {
-  return request.post('/check-username', { username })
+  // 暂时返回一个成功的Promise，因为真实后端接口中没有这个接口
+  // 实际项目中，后端需要添加专门的用户名检查接口
+  return Promise.resolve()
 }
 
+// 添加 getCurrentUser 函数的导出
 export const getCurrentUser = (): Promise<User | null> => {
   const token = getToken()
   if (!token) {
     return Promise.resolve(null)
   }
-  return request
-    .get('/me')
+  // 使用 /user/{id} 接口获取当前用户信息
+  // 这里假设从 token 中解析出用户 ID，或者使用默认 ID
+  const userId = '1' // 实际项目中应该从 token 中解析
+  return api
+    .getUserInfo(userId)
     .then(handleUserResponse)
     .catch(() => {
       // 如果请求失败，清除 token 并返回 null
@@ -82,3 +88,17 @@ export const getCurrentUser = (): Promise<User | null> => {
       return null
     })
 }
+
+// 为了兼容性，也导出 getCurrentUser 作为默认导出的属性
+const authProvider = {
+  getToken,
+  getUser,
+  handleUserResponse,
+  login,
+  register,
+  logout,
+  checkUsername,
+  getCurrentUser,
+}
+
+export default authProvider

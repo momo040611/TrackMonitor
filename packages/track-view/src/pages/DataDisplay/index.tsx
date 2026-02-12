@@ -8,8 +8,6 @@ import {
 } from '@ant-design/icons'
 import DataDashboard from './components/DataDashboard/DataDashboard'
 import TrackingConfig from './components/TrackingConfig/TrackingConfig'
-import AiAnalysis from './components/AiAnalysis/AiAnalysis'
-import AlarmCenter from './components/AlarmCenter/AlarmCenter'
 import './index.less'
 
 const DataDisplay = () => {
@@ -27,18 +25,6 @@ const DataDisplay = () => {
       label: '可视化埋点配置',
       icon: <SettingOutlined />,
       children: <TrackingConfig />,
-    },
-    {
-      key: 'ai',
-      label: 'AI 分析控制台',
-      icon: <AreaChartOutlined />,
-      children: <AiAnalysis />,
-    },
-    {
-      key: 'alarm',
-      label: '告警中心',
-      icon: <BellOutlined />,
-      children: <AlarmCenter />,
     },
   ]
 

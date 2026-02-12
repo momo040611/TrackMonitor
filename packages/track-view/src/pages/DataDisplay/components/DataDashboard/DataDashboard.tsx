@@ -1,9 +1,16 @@
 import React, { useState, useRef, useEffect } from 'react'
-import { Card, Row, Col, DatePicker, Select, Radio, Space, Spin, Statistic, Badge } from 'antd'
+import { Card, Row, Col, Spin, Statistic, message } from 'antd'
+import {
+  AlertOutlined,
+  CheckCircleOutlined,
+  BarChartOutlined,
+  ThunderboltOutlined,
+  ImportOutlined,
+} from '@ant-design/icons'
 import ReactECharts from 'echarts-for-react'
 import type { EChartsOption } from 'echarts'
 import * as echarts from 'echarts/core'
-import { LineChart, PieChart, FunnelChart, BarChart } from 'echarts/charts'
+import { LineChart, PieChart, BarChart } from 'echarts/charts'
 import {
   TitleComponent,
   TooltipComponent,
@@ -11,12 +18,16 @@ import {
   GridComponent,
 } from 'echarts/components'
 import { CanvasRenderer } from 'echarts/renderers'
+import { useLocation } from 'react-router-dom'
+import ErrorMonitor from '../ErrorMonitor'
+import PerformanceAnalysis from '../PerformanceAnalysis'
+import { api } from '../../../../api/request'
+import sharedDataService from '../../../../services/sharedDataService'
 
 // 注册 ECharts 组件
 echarts.use([
   LineChart,
   PieChart,
-  FunnelChart,
   BarChart,
   TitleComponent,
   TooltipComponent,
@@ -24,9 +35,6 @@ echarts.use([
   GridComponent,
   CanvasRenderer,
 ])
-
-const { RangePicker } = DatePicker
-const { Option } = Select
 
 // 类型定义
 interface OverviewData {
@@ -70,13 +78,12 @@ interface RealtimeData {
 }
 
 const DataDashboard: React.FC = () => {
+  const location = useLocation()
+
   // 状态管理
-  const [selectedProject, setSelectedProject] = useState<string>('project1')
-  const [timeRange, setTimeRange] = useState<string>('today')
-  const [trackingDimension, setTrackingDimension] = useState<string>('single')
-  const [activeMetric, setActiveMetric] = useState<string>('clicks')
   const [realtimeData, setRealtimeData] = useState<number>(0)
   const [isLoading, setIsLoading] = useState<boolean>(true)
+  const [hasImportedData, setHasImportedData] = useState<boolean>(false)
 
   // 数据状态
   const [overviewData, setOverviewData] = useState<OverviewData>({
@@ -88,57 +95,68 @@ const DataDashboard: React.FC = () => {
   })
   const [trendData, setTrendData] = useState<TrendDataItem[]>([])
   const [typeDistributionData, setTypeDistributionData] = useState<TypeDistributionItem[]>([])
-  const [topTrackingData, setTopTrackingData] = useState<TopTrackingItem[]>([])
-  const [funnelData, setFunnelData] = useState<FunnelItem[]>([])
   const [realtimeChartData, setRealtimeChartData] = useState<number[]>([])
 
   // Ref
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
-  const chartRefs = useRef<{ [key: string]: any }>({})
+
+  // 检查并导入从 DataAnalysis 页面导出的数据
+  useEffect(() => {
+    const params = new URLSearchParams(location.search)
+    const source = params.get('source')
+    const exported = params.get('exported')
+
+    if (source === 'data-analysis' && exported === 'true') {
+      importDataFromAnalysis()
+    }
+  }, [location.search])
+
+  // 从 DataAnalysis 导入数据
+  const importDataFromAnalysis = () => {
+    const processedData = sharedDataService.getProcessedData({ type: 'cleaned-data' })
+
+    if (processedData.length > 0) {
+      // 处理导入的数据，这里可以根据实际需求进行转换和使用
+      console.log('导入的数据:', processedData)
+      message.success(`成功导入 ${processedData.length} 条处理后的数据`)
+      setHasImportedData(true)
+
+      // 这里可以根据导入的数据更新相应的状态
+      // 例如：更新概览数据、趋势数据等
+    } else {
+      message.warning('没有找到可导入的数据')
+    }
+  }
+
+  // 手动导入数据
+  const handleManualImport = () => {
+    importDataFromAnalysis()
+  }
 
   // 获取数据的函数
   const fetchData = async () => {
     setIsLoading(true)
     try {
       // 获取概览数据
-      const overviewResponse = await fetch('/api/analytics/overview')
-      const overviewResult = await overviewResponse.json()
-      if (overviewResult.code === 200) {
+      const overviewResult = await api.getOverviewData()
+      if (overviewResult.data && overviewResult.data.code === 200) {
         setOverviewData(overviewResult.data)
       }
 
       // 获取趋势数据
-      const trendResponse = await fetch('/api/analytics/trend')
-      const trendResult = await trendResponse.json()
-      if (trendResult.code === 200) {
+      const trendResult = await api.getTrendData()
+      if (trendResult.data && trendResult.data.code === 200) {
         setTrendData(trendResult.data)
       }
 
       // 获取类型分布数据
-      const typeDistributionResponse = await fetch('/api/analytics/type-distribution')
-      const typeDistributionResult = await typeDistributionResponse.json()
-      if (typeDistributionResult.code === 200) {
+      const typeDistributionResult = await api.getTypeDistributionData()
+      if (typeDistributionResult.data && typeDistributionResult.data.code === 200) {
         setTypeDistributionData(typeDistributionResult.data)
       }
-
-      // 获取热门埋点数据
-      const topTrackingResponse = await fetch('/api/analytics/top-tracking')
-      const topTrackingResult = await topTrackingResponse.json()
-      if (topTrackingResult.code === 200) {
-        setTopTrackingData(topTrackingResult.data)
-      }
-
-      // 获取转化漏斗数据
-      const funnelResponse = await fetch('/api/analytics/funnel')
-      const funnelResult = await funnelResponse.json()
-      if (funnelResult.code === 200) {
-        setFunnelData(funnelResult.data)
-      }
-
       // 获取实时数据
-      const realtimeResponse = await fetch('/api/analytics/realtime')
-      const realtimeResult = await realtimeResponse.json()
-      if (realtimeResult.code === 200) {
+      const realtimeResult = await api.getRealtimeData()
+      if (realtimeResult.data && realtimeResult.data.code === 200) {
         setRealtimeData(realtimeResult.data.current)
         setRealtimeChartData(realtimeResult.data.trend)
       }
@@ -150,9 +168,9 @@ const DataDashboard: React.FC = () => {
   }
 
   // ECharts 配置项
-  // 1. 折线图配置（实时趋势）
+  // 1. 折线图配置（事件趋势）
   const lineChartOption: EChartsOption = {
-    title: { text: '近30天数据趋势', left: 'center', textStyle: { fontSize: 14 } },
+    title: { text: '近30天事件趋势', left: 'center', textStyle: { fontSize: 14 } },
     tooltip: { trigger: 'axis' },
     legend: { data: ['点击量', '曝光量'], bottom: 0 },
     grid: { left: '3%', right: '4%', bottom: '15%', top: '15%', containLabel: true },
@@ -180,9 +198,9 @@ const DataDashboard: React.FC = () => {
     ],
   }
 
-  // 2. 饼图配置（埋点类型占比）
+  // 2. 饼图配置（事件类型占比）
   const pieChartOption: EChartsOption = {
-    title: { text: '埋点类型占比', left: 'center', textStyle: { fontSize: 14 } },
+    title: { text: '事件类型占比', left: 'center', textStyle: { fontSize: 14 } },
     tooltip: { trigger: 'item' },
     legend: { orient: 'vertical', left: 10, top: 20 },
     series: [
@@ -209,71 +227,7 @@ const DataDashboard: React.FC = () => {
     ],
   }
 
-  // 3. 柱状图配置（热门埋点 TOP10）
-  const barChartOption: EChartsOption = {
-    title: { text: '热门埋点 TOP10', left: 'center', textStyle: { fontSize: 14 } },
-    tooltip: { trigger: 'axis' },
-    grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
-    xAxis: {
-      type: 'value',
-      boundaryGap: [0, 0.01],
-    },
-    yAxis: {
-      type: 'category',
-      data: topTrackingData.map((item) => item.name),
-      axisLabel: { rotate: 0 },
-    },
-    series: [
-      {
-        name: '点击量',
-        type: 'bar',
-        data: topTrackingData.map((item) => item.clicks),
-        itemStyle: { color: '#1890ff' },
-      },
-    ],
-  }
-
-  // 4. 漏斗图配置（转化漏斗）
-  const funnelChartOption: EChartsOption = {
-    title: { text: '转化漏斗', left: 'center', textStyle: { fontSize: 14 } },
-    tooltip: { trigger: 'item', formatter: '{a} <br/>{b} : {c} ({d}%)' },
-    legend: { data: funnelData.map((item) => item.name), bottom: 0 },
-    series: [
-      {
-        name: '转化',
-        type: 'funnel',
-        left: '10%',
-        top: 60,
-        bottom: 60,
-        width: '80%',
-        min: 0,
-        max: 100,
-        minSize: '0%',
-        maxSize: '100%',
-        sort: 'descending',
-        gap: 2,
-        label: {
-          show: true,
-          position: 'inside',
-        },
-        itemStyle: {
-          borderColor: '#fff',
-          borderWidth: 1,
-        },
-        emphasis: {
-          label: { fontSize: 12 },
-          itemStyle: { shadowBlur: 10, shadowOffsetX: 0, shadowColor: 'rgba(0, 0, 0, 0.5)' },
-        },
-        data: funnelData.map((item) => ({
-          name: item.name,
-          value: item.value,
-          itemStyle: { color: item.color },
-        })),
-      },
-    ],
-  }
-
-  // 5. 实时上报折线图配置
+  // 3. 实时上报折线图配置
   const realtimeChartOption: EChartsOption = {
     title: { text: '实时上报趋势', left: 'center', textStyle: { fontSize: 14 } },
     tooltip: { trigger: 'axis' },
@@ -311,9 +265,8 @@ const DataDashboard: React.FC = () => {
   useEffect(() => {
     const updateRealtimeData = async () => {
       try {
-        const realtimeResponse = await fetch('/api/analytics/realtime')
-        const realtimeResult = await realtimeResponse.json()
-        if (realtimeResult.code === 200) {
+        const realtimeResult = await api.getRealtimeData()
+        if (realtimeResult.data && realtimeResult.data.code === 200) {
           setRealtimeData(realtimeResult.data.current)
           setRealtimeChartData(realtimeResult.data.trend)
         }
@@ -337,194 +290,247 @@ const DataDashboard: React.FC = () => {
 
   return (
     <div>
-      {/* 顶部筛选 */}
-      <Card style={{ marginBottom: '24px', background: '#fff' }}>
-        <Space size="middle" wrap style={{ width: '100%', justifyContent: 'flex-start' }}>
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <span style={{ marginRight: '8px', fontWeight: 500 }}>项目：</span>
-            <Select value={selectedProject} onChange={setSelectedProject} style={{ width: 140 }}>
-              <Option value="project1">项目1</Option>
-              <Option value="project2">项目2</Option>
-              <Option value="project3">项目3</Option>
-            </Select>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <span style={{ marginRight: '8px', fontWeight: 500 }}>时间范围：</span>
-            <Select value={timeRange} onChange={setTimeRange} style={{ width: 140 }}>
-              <Option value="today">今日</Option>
-              <Option value="7days">近 7 天</Option>
-              <Option value="30days">近 30 天</Option>
-              <Option value="custom">自定义</Option>
-            </Select>
-            {timeRange === 'custom' && (
-              <RangePicker
-                onChange={(dates) => console.log('自定义日期范围:', dates)}
-                style={{ marginLeft: '8px' }}
-              />
-            )}
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <span style={{ marginRight: '8px', fontWeight: 500 }}>埋点维度：</span>
-            <Radio.Group
-              value={trackingDimension}
-              onChange={(e) => setTrackingDimension(e.target.value)}
-            >
-              <Radio.Button value="single">单埋点</Radio.Button>
-              <Radio.Button value="multiple">多埋点对比</Radio.Button>
-              <Radio.Button value="page">页面维度</Radio.Button>
-            </Radio.Group>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <span style={{ marginRight: '8px', fontWeight: 500 }}>指标：</span>
-            <Select value={activeMetric} onChange={setActiveMetric} style={{ width: 120 }}>
-              <Option value="clicks">点击量</Option>
-              <Option value="impressions">曝光量</Option>
-            </Select>
-          </div>
-        </Space>
-      </Card>
+      {/* 数据概览部分 */}
+      <div style={{ marginBottom: '24px' }}>
+        <Spin spinning={isLoading} tip="加载中...">
+          <Row gutter={[16, 16]}>
+            {/* 全局概览卡 */}
+            <Col xs={24} lg={24}>
+              <Card title="全局概览" variant="outlined" style={{ background: '#fff' }}>
+                <Row gutter={[24, 16]} align="middle">
+                  <Col
+                    xs={24}
+                    sm={12}
+                    md={6}
+                    lg={6}
+                    style={{ display: 'flex', justifyContent: 'center' }}
+                  >
+                    <div
+                      style={{
+                        textAlign: 'center',
+                        padding: '16px',
+                        borderRadius: '8px',
+                        backgroundColor: '#fff1f0',
+                        width: '100%',
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontSize: 14,
+                          color: '#666',
+                          marginBottom: '8px',
+                          fontWeight: 500,
+                        }}
+                      >
+                        今日错误总数
+                      </div>
+                      <div
+                        style={{
+                          fontSize: 24,
+                          fontWeight: 600,
+                          color: '#f5222d',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <AlertOutlined style={{ marginRight: '8px', fontSize: 20 }} />
+                        {overviewData.totalPV}
+                      </div>
+                    </div>
+                  </Col>
+                  <Col
+                    xs={24}
+                    sm={12}
+                    md={6}
+                    lg={6}
+                    style={{ display: 'flex', justifyContent: 'center' }}
+                  >
+                    <div
+                      style={{
+                        textAlign: 'center',
+                        padding: '16px',
+                        borderRadius: '8px',
+                        backgroundColor: '#f6ffed',
+                        width: '100%',
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontSize: 14,
+                          color: '#666',
+                          marginBottom: '8px',
+                          fontWeight: 500,
+                        }}
+                      >
+                        API请求成功率
+                      </div>
+                      <div
+                        style={{
+                          fontSize: 24,
+                          fontWeight: 600,
+                          color: '#52c41a',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <CheckCircleOutlined style={{ marginRight: '8px', fontSize: 20 }} />
+                        {overviewData.totalUV}%
+                      </div>
+                    </div>
+                  </Col>
+                  <Col
+                    xs={24}
+                    sm={12}
+                    md={6}
+                    lg={6}
+                    style={{ display: 'flex', justifyContent: 'center' }}
+                  >
+                    <div
+                      style={{
+                        textAlign: 'center',
+                        padding: '16px',
+                        borderRadius: '8px',
+                        backgroundColor: '#e6f7ff',
+                        width: '100%',
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontSize: 14,
+                          color: '#666',
+                          marginBottom: '8px',
+                          fontWeight: 500,
+                        }}
+                      >
+                        今日事件上报量
+                      </div>
+                      <div
+                        style={{
+                          fontSize: 24,
+                          fontWeight: 600,
+                          color: '#1890ff',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <BarChartOutlined style={{ marginRight: '8px', fontSize: 20 }} />
+                        {overviewData.todayTracking}
+                      </div>
+                    </div>
+                  </Col>
+                  <Col
+                    xs={24}
+                    sm={12}
+                    md={6}
+                    lg={6}
+                    style={{ display: 'flex', justifyContent: 'center' }}
+                  >
+                    <div
+                      style={{
+                        textAlign: 'center',
+                        padding: '16px',
+                        borderRadius: '8px',
+                        backgroundColor: '#f9f0ff',
+                        width: '100%',
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontSize: 14,
+                          color: '#666',
+                          marginBottom: '8px',
+                          fontWeight: 500,
+                        }}
+                      >
+                        实时事件上报量
+                      </div>
+                      <div
+                        style={{
+                          fontSize: 24,
+                          fontWeight: 600,
+                          color: '#722ed1',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <ThunderboltOutlined style={{ marginRight: '8px', fontSize: 20 }} />
+                        {realtimeData}
+                      </div>
+                    </div>
+                  </Col>
+                </Row>
+              </Card>
+            </Col>
 
-      {/* 核心卡片 */}
-      <Spin spinning={isLoading} tip="加载中...">
-        <Row gutter={[16, 16]}>
-          {/* 全局概览卡 */}
-          <Col xs={24} lg={24}>
-            <Card title="全局概览" bordered={false} style={{ background: '#fff' }}>
-              <Row gutter={[24, 16]}>
-                <Col xs={6} sm={6} md={4} lg={4}>
-                  <Statistic
-                    title="总 PV"
-                    value={overviewData.totalPV}
-                    prefix={<Badge status="success" />}
-                    valueStyle={{ fontSize: 20, fontWeight: 600 }}
+            {/* 事件趋势卡 */}
+            <Col xs={24} lg={12}>
+              <Card title="事件趋势" variant="outlined" style={{ background: '#fff' }}>
+                <div style={{ height: 300 }}>
+                  <ReactECharts
+                    option={lineChartOption}
+                    style={{ width: '100%', height: '100%' }}
+                    echarts={echarts}
                   />
-                </Col>
-                <Col xs={6} sm={6} md={4} lg={4}>
-                  <Statistic
-                    title="总 UV"
-                    value={overviewData.totalUV}
-                    prefix={<Badge status="processing" />}
-                    valueStyle={{ fontSize: 20, fontWeight: 600 }}
-                  />
-                </Col>
-                <Col xs={6} sm={6} md={4} lg={4}>
-                  <Statistic
-                    title="今日埋点上报量"
-                    value={overviewData.todayTracking}
-                    prefix={<Badge status="default" />}
-                    valueStyle={{ fontSize: 20, fontWeight: 600 }}
-                  />
-                </Col>
-                <Col xs={6} sm={6} md={4} lg={4}>
-                  <Statistic
-                    title="同比增长"
-                    value={overviewData.yoyGrowth}
-                    suffix="%"
-                    prefix={<Badge status="success" />}
-                    valueStyle={{ fontSize: 20, fontWeight: 600, color: '#52c41a' }}
-                  />
-                </Col>
-                <Col xs={12} sm={12} md={4} lg={4}>
-                  <Statistic
-                    title="环比增长"
-                    value={overviewData.momGrowth}
-                    suffix="%"
-                    prefix={<Badge status="processing" />}
-                    valueStyle={{ fontSize: 20, fontWeight: 600, color: '#faad14' }}
-                  />
-                </Col>
-                <Col xs={12} sm={12} md={4} lg={4}>
-                  <Statistic
-                    title="实时上报量"
-                    value={realtimeData}
-                    prefix={<Badge status="warning" />}
-                    valueStyle={{ fontSize: 20, fontWeight: 600, color: '#f5222d' }}
-                  />
-                </Col>
-              </Row>
-            </Card>
-          </Col>
+                </div>
+              </Card>
+            </Col>
 
-          {/* 埋点趋势卡 */}
-          <Col xs={24} lg={12}>
-            <Card title="埋点趋势" bordered={false} style={{ background: '#fff' }}>
-              <div style={{ height: 300 }}>
-                <ReactECharts
-                  option={lineChartOption}
-                  style={{ width: '100%', height: '100%' }}
-                  echarts={echarts}
-                />
-              </div>
-            </Card>
-          </Col>
-
-          {/* 埋点类型占比卡 */}
-          <Col xs={24} lg={12}>
-            <Card title="埋点类型占比" bordered={false} style={{ background: '#fff' }}>
-              <div style={{ height: 300 }}>
-                <ReactECharts
-                  option={pieChartOption}
-                  style={{ width: '100%', height: '100%' }}
-                  echarts={echarts}
-                />
-              </div>
-            </Card>
-          </Col>
-
-          {/* 热门埋点 TOP10 */}
-          <Col xs={24} lg={12}>
-            <Card title="热门埋点 TOP10" bordered={false} style={{ background: '#fff' }}>
-              <div style={{ height: 300 }}>
-                <ReactECharts
-                  option={barChartOption}
-                  style={{ width: '100%', height: '100%' }}
-                  echarts={echarts}
-                />
-              </div>
-            </Card>
-          </Col>
-
-          {/* 转化漏斗卡 */}
-          <Col xs={24} lg={12}>
-            <Card title="转化漏斗" bordered={false} style={{ background: '#fff' }}>
-              <div style={{ height: 300 }}>
-                <ReactECharts
-                  option={funnelChartOption}
-                  style={{ width: '100%', height: '100%' }}
-                  echarts={echarts}
-                />
-              </div>
-            </Card>
-          </Col>
-
-          {/* 实时上报卡 */}
-          <Col xs={24} lg={24}>
-            <Card title="实时上报" bordered={false} style={{ background: '#fff' }}>
-              <Row gutter={16}>
-                <Col xs={24} md={6}>
-                  <Statistic
-                    title="当前上报量"
-                    value={realtimeData}
-                    valueStyle={{ fontSize: 32, fontWeight: 600, color: '#f5222d' }}
+            {/* 事件类型占比卡 */}
+            <Col xs={24} lg={12}>
+              <Card title="事件类型占比" variant="outlined" style={{ background: '#fff' }}>
+                <div style={{ height: 300 }}>
+                  <ReactECharts
+                    option={pieChartOption}
+                    style={{ width: '100%', height: '100%' }}
+                    echarts={echarts}
                   />
-                  <div style={{ marginTop: '16px' }}>
-                    <span style={{ fontSize: 14, color: '#666' }}>刷新频率: 10s/次</span>
-                  </div>
-                </Col>
-                <Col xs={24} md={18}>
-                  <div style={{ height: 200 }}>
-                    <ReactECharts
-                      option={realtimeChartOption}
-                      style={{ width: '100%', height: '100%' }}
-                      echarts={echarts}
+                </div>
+              </Card>
+            </Col>
+
+            {/* 实时上报卡 */}
+            <Col xs={24} lg={24}>
+              <Card title="实时上报" variant="outlined" style={{ background: '#fff' }}>
+                <Row gutter={16}>
+                  <Col xs={24} md={6}>
+                    <Statistic
+                      title="当前上报量"
+                      value={realtimeData}
+                      styles={{ content: { fontSize: 32, fontWeight: 600, color: '#f5222d' } }}
                     />
-                  </div>
-                </Col>
-              </Row>
-            </Card>
-          </Col>
-        </Row>
-      </Spin>
+                    <div style={{ marginTop: '16px' }}>
+                      <span style={{ fontSize: 14, color: '#666' }}>刷新频率: 10s/次</span>
+                    </div>
+                  </Col>
+                  <Col xs={24} md={18}>
+                    <div style={{ height: 200 }}>
+                      <ReactECharts
+                        option={realtimeChartOption}
+                        style={{ width: '100%', height: '100%' }}
+                        echarts={echarts}
+                      />
+                    </div>
+                  </Col>
+                </Row>
+              </Card>
+            </Col>
+          </Row>
+        </Spin>
+      </div>
+
+      {/* 错误监控部分 */}
+      <div style={{ marginBottom: '24px' }}>
+        <ErrorMonitor />
+      </div>
+
+      {/* 性能分析部分 */}
+      <div style={{ marginBottom: '24px' }}>
+        <PerformanceAnalysis />
+      </div>
     </div>
   )
 }

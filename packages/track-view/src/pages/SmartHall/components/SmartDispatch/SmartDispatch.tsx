@@ -26,6 +26,7 @@ import {
   ThunderboltOutlined,
   TeamOutlined,
 } from '@ant-design/icons'
+import { AiService } from '../../services/useAiAssistant'
 import './SmartDispatch.less'
 
 const { TextArea } = Input
@@ -97,16 +98,70 @@ export const SmartDispatch: React.FC<Props> = ({ initialTask }) => {
     }
   }, [initialTask])
 
-  // 模拟 AI 分派逻辑
-  const handleDispatch = () => {
+  // AI 分派逻辑
+  const handleDispatch = async () => {
     if (!taskDesc.trim()) return message.warning('请输入任务描述')
 
     setLoading(true)
     setCandidates([])
     setAnalyzedTags([])
 
-    setTimeout(() => {
-      // 1. 简单的关键词提取模拟
+    try {
+      // 调用后端接口获取智能分派数据
+      const dispatchData = await AiService.smartDispatch(taskDesc)
+
+      // 处理返回的数据
+      if (dispatchData && dispatchData.candidates) {
+        setCandidates(dispatchData.candidates.sort((a: any, b: any) => b.matchScore - a.matchScore))
+        setAnalyzedTags(dispatchData.tags || [])
+        message.success('智能分派分析完成')
+      } else {
+        // 如果没有数据，使用默认逻辑
+        // 1. 简单的关键词提取
+        const tags: string[] = []
+        if (taskDesc.toLowerCase().includes('ios') || taskDesc.includes('崩溃'))
+          tags.push('Client', 'Crash')
+        else if (taskDesc.toLowerCase().includes('java') || taskDesc.includes('超时'))
+          tags.push('Server', 'Performance')
+        else tags.push('Frontend', 'UI')
+
+        setAnalyzedTags(tags)
+
+        // 2. 模拟打分逻辑
+        const scoredDevs = MOCK_DEVS.map((dev) => {
+          let score = 50 // 基础分
+          let reason = '技能栈部分匹配'
+
+          // 简单的规则匹配
+          if (tags.includes('Crash') && dev.skills.includes('Swift')) {
+            score += 40
+            reason = '擅长处理客户端崩溃问题'
+          } else if (tags.includes('Performance') && dev.skills.includes('Java')) {
+            score += 40
+            reason = '后端性能优化专家'
+          } else if (tags.includes('UI') && dev.skills.includes('React')) {
+            score += 45
+            reason = '负责该 UI 模块'
+          }
+
+          // 负载惩罚
+          if (dev.currentLoad > 80) {
+            score -= 10
+            reason += ' (但当前负载较高)'
+          }
+
+          return { ...dev, matchScore: score }
+        }).sort((a, b) => b.matchScore - a.matchScore)
+
+        setCandidates(scoredDevs)
+        message.success('智能分派分析完成 (使用默认逻辑)')
+      }
+    } catch (error) {
+      message.error('智能分派失败，请稍后重试')
+      console.error('智能分派失败:', error)
+
+      // 出错时使用默认逻辑
+      // 1. 简单的关键词提取
       const tags: string[] = []
       if (taskDesc.toLowerCase().includes('ios') || taskDesc.includes('崩溃'))
         tags.push('Client', 'Crash')
@@ -143,9 +198,9 @@ export const SmartDispatch: React.FC<Props> = ({ initialTask }) => {
       }).sort((a, b) => b.matchScore - a.matchScore)
 
       setCandidates(scoredDevs)
+    } finally {
       setLoading(false)
-      message.success('智能分派分析完成')
-    }, 1500)
+    }
   }
 
   const handleAssign = (name: string) => {

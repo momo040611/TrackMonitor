@@ -22,6 +22,7 @@ import {
   FileTextOutlined,
   ExportOutlined,
 } from '@ant-design/icons'
+import { AiService } from '../../services/useAiAssistant'
 import './AnomalyDiagnosis.less'
 
 const { Title, Paragraph, Text } = Typography
@@ -69,9 +70,63 @@ export const AnomalyDiagnosis: React.FC<Props> = ({ onDispatch }) => {
     try {
       setAnalyzing(true)
       setIssues([])
-      await new Promise((resolve) => setTimeout(resolve, 1500))
 
-      const mockIssues: DiagnosisItem[] = [
+      // 调用后端接口获取异常诊断数据
+      const diagnosisData = await AiService.getAiAnalysisData('anomaly-diagnosis')
+
+      // 处理返回的数据
+      if (diagnosisData && diagnosisData.issues) {
+        const issues = diagnosisData.issues
+        setIssues(issues)
+        const totalDeduction = issues.reduce(
+          (acc: number, item: DiagnosisItem) => acc + item.score_impact,
+          0
+        )
+        setHealthScore(Math.max(0, 100 - totalDeduction))
+        message.success('诊断完成')
+      } else {
+        // 如果没有数据，使用默认数据
+        const defaultIssues: DiagnosisItem[] = [
+          {
+            id: '1',
+            level: 'error',
+            title: 'generate_click 事件参数缺失',
+            description: '检测到 5% 的生成点击事件缺失 model_type 参数。',
+            suggestion: '请检查 TrackSDK 的调用代码，确保 payload 中包含 model_type 字段。',
+            affected_scope: 'A/B 测试实验组 B',
+            score_impact: 15,
+          },
+          {
+            id: '2',
+            level: 'warning',
+            title: 'work_show 曝光未去重',
+            description: '同一作品 ID 在短时间内触发了多次曝光。',
+            suggestion: '建议引入防抖 (Debounce) 机制，或使用 SDK 的 once: true 选项。',
+            score_impact: 5,
+          },
+          {
+            id: '3',
+            level: 'info',
+            title: 'Prompt 长度分布异常',
+            description: '检测到超长 Prompt (Length > 1000) 占比上升。',
+            suggestion: '业务提示，暂无需代码修复。',
+            score_impact: 0,
+          },
+        ]
+        setIssues(defaultIssues)
+        const totalDeduction = defaultIssues.reduce(
+          (acc: number, item: DiagnosisItem) => acc + item.score_impact,
+          0
+        )
+        setHealthScore(Math.max(0, 100 - totalDeduction))
+        message.success('诊断完成 (使用默认数据)')
+      }
+    } catch (error) {
+      message.error('诊断失败，请稍后重试')
+      console.error('诊断失败:', error)
+
+      // 出错时使用默认数据
+      const defaultIssues: DiagnosisItem[] = [
         {
           id: '1',
           level: 'error',
@@ -98,14 +153,12 @@ export const AnomalyDiagnosis: React.FC<Props> = ({ onDispatch }) => {
           score_impact: 0,
         },
       ]
-
-      setIssues(mockIssues)
-      const totalDeduction = mockIssues.reduce((acc, item) => acc + item.score_impact, 0)
+      setIssues(defaultIssues)
+      const totalDeduction = defaultIssues.reduce(
+        (acc: number, item: DiagnosisItem) => acc + item.score_impact,
+        0
+      )
       setHealthScore(Math.max(0, 100 - totalDeduction))
-      message.success('诊断完成')
-    } catch (error) {
-      message.error('诊断失败')
-      console.error(error)
     } finally {
       setAnalyzing(false)
     }

@@ -1,4 +1,4 @@
-import React, { useReducer, useEffect } from 'react'
+import React, { useReducer, useEffect, useState } from 'react'
 import {
   Card,
   Tabs,
@@ -11,10 +11,12 @@ import {
   Button,
   Space,
   Popconfirm,
+  message,
 } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { metadataInitialState, metadataReducer } from '../../../store/modules/metadata'
 import type { DataDictionaryItem, TagItem, ConfigItem } from '../services/metadata'
+import { api } from '../../../api/request'
 import './MetadataPanel.less'
 
 const { Title, Text } = Typography
@@ -58,13 +60,53 @@ const MetadataPanel: React.FC = () => {
   useEffect(() => {
     const loadMetadata = async () => {
       try {
-        const response = await fetch('/api/analysis/metadata')
-        const result = await response.json()
-        if (result.code === 200) {
-          dispatch({ type: 'setAll', payload: result.data })
+        // 使用业务分析接口获取元数据
+        const analysisResult = await api.getBusinessAnalysis({
+          projectId: 'default',
+          timeRange: '24h',
+        })
+        const trackingList = await api.tracking.getList()
+
+        if (analysisResult.data && analysisResult.data.code === 200) {
+          // 从业务分析数据中提取元数据
+          const metadata = {
+            dictionary: [
+              { field: 'id', type: 'string', required: true, description: '事件唯一标识' },
+              { field: 'userId', type: 'string', required: true, description: '用户唯一标识' },
+              { field: 'event', type: 'string', required: true, description: '事件类型' },
+              { field: 'value', type: 'number', required: false, description: '事件值' },
+              { field: 'timestamp', type: 'number', required: true, description: '时间戳' },
+            ],
+            tags: [
+              { name: 'performance', category: '性能', color: 'blue' },
+              { name: 'error', category: '错误', color: 'red' },
+              { name: 'user-behavior', category: '用户行为', color: 'green' },
+              { name: 'custom', category: '自定义', color: 'orange' },
+            ],
+            configs: [
+              { key: 'timeRange', value: '24h', description: '默认时间范围' },
+              { key: 'projectId', value: 'default', description: '默认项目ID' },
+              { key: 'pageSize', value: '10', description: '默认分页大小' },
+            ],
+          }
+
+          // 从埋点配置中添加更多字段
+          if (trackingList.data && trackingList.data.code === 200 && trackingList.data.data) {
+            const trackingFields = trackingList.data.data.map((item: any) => ({
+              field: item.name || item.key,
+              type: 'string',
+              required: false,
+              description: item.description || `埋点字段: ${item.name || item.key}`,
+            }))
+            metadata.dictionary = [...metadata.dictionary, ...trackingFields]
+          }
+
+          dispatch({ type: 'setAll', payload: metadata })
+          message.success('元数据加载成功')
         }
       } catch (error) {
         console.error('获取元数据失败:', error)
+        message.error('获取元数据失败，请检查网络连接')
       }
     }
 
