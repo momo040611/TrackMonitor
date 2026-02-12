@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException } from '@nestjs/common'
+import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository, MoreThanOrEqual, Between, IsNull, Not } from 'typeorm'
 import { EventDto } from 'src/common/dto/event'
@@ -121,5 +121,49 @@ export class DatabaseService {
       take: limit ? Number(limit) : undefined,
       select: ['id', 'type', 'url', 'data', 'userId', 'timestamp', 'priority'],
     })
+  }
+
+  async updateEvent(id: number, event: Partial<EventDto>): Promise<EventEntity> {
+    const existingEvent = await this.eventRepository.findOne({ where: { id } })
+    if (!existingEvent) {
+      throw new NotFoundException(`Event with id ${id} not found`)
+    }
+
+    if (event.type) {
+      existingEvent.type = event.type
+    }
+    if (event.url !== undefined) {
+      existingEvent.url = event.url || ''
+    }
+    if (event.data !== undefined) {
+      existingEvent.data = event.data
+    }
+    if (event.userId !== undefined) {
+      existingEvent.userId = event.userId || 0
+    }
+    if (event.sessionId !== undefined) {
+      existingEvent.sessionId = event.sessionId || ''
+    }
+    if (event.priority) {
+      existingEvent.priority = priorityMap[event.priority] || 0
+    }
+
+    return await this.eventRepository.save(existingEvent)
+  }
+
+  async deleteEvent(id: number): Promise<{ success: boolean }> {
+    const result = await this.eventRepository.delete(id)
+    if (result.affected === 0) {
+      throw new NotFoundException(`Event with id ${id} not found`)
+    }
+    return { success: true }
+  }
+
+  async getEventById(id: number): Promise<EventEntity> {
+    const event = await this.eventRepository.findOne({ where: { id } })
+    if (!event) {
+      throw new NotFoundException(`Event with id ${id} not found`)
+    }
+    return event
   }
 }

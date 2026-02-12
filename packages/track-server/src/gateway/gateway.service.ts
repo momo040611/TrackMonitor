@@ -1,13 +1,15 @@
 import { Injectable } from '@nestjs/common'
 import { QueueService } from '../queue/queue.service'
 import { ProcessingService } from '../processing/processing.service'
+import { DatabaseService } from '../storage/database/database.service'
 import { EventDto } from '../common/dto/event'
 
 @Injectable()
 export class GatewayService {
   constructor(
     private readonly queueService: QueueService,
-    private readonly processingService: ProcessingService
+    private readonly processingService: ProcessingService,
+    private readonly databaseService: DatabaseService
   ) {}
   //单一队列
   async trackEvent(event: EventDto): Promise<{ success: boolean }> {
@@ -42,5 +44,20 @@ export class GatewayService {
   //分析特定时间事件
   async analyzeEvent(type: string, time: string, startTime?: string, endTime?: string) {
     return await this.processingService.analyzeEvent(type, time, startTime, endTime)
+  }
+
+  // 更新事件
+  async updateEvent(id: number, event: Partial<EventDto>) {
+    return await this.databaseService.updateEvent(id, event)
+  }
+
+  // 删除事件
+  async deleteEvent(id: number) {
+    return await this.databaseService.deleteEvent(id)
+  }
+
+  // 获取单个事件
+  async getEventById(id: number) {
+    return await this.databaseService.getEventById(id)
   }
 }

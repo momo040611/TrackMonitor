@@ -6,6 +6,6 @@ import { RedisModule } from './redis/redis.module'
 @Module({
   imports: [DatabaseModule, RedisModule],
   providers: [StorageService],
-  exports: [StorageService],
+  exports: [StorageService, DatabaseModule],
 })
 export class StorageModule {}
