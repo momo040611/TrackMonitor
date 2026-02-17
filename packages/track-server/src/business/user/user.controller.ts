@@ -13,7 +13,7 @@ import { UserService } from './user.service'
 import { AuthService } from '../auth/auth.service'
 import { CreateUserDto } from './dto/create-user.dto'
 import { LoginDto } from './dto/login.dto'
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger'
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiBody } from '@nestjs/swagger'
 
 @ApiTags('用户模块')
 @Controller('user')
@@ -63,6 +63,9 @@ export class UserController {
   }
 
   @ApiOperation({ summary: '检查用户名', description: '检查用户名是否已被使用' })
+  @ApiBody({
+    schema: { type: 'object', properties: { username: { type: 'string', example: 'testuser' } } },
+  })
   @ApiResponse({ status: 200, description: '检查成功', type: Object, example: { available: true } })
   @ApiResponse({ status: 400, description: '参数错误' })
   @Post('check-username')

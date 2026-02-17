@@ -12,7 +12,6 @@ import {
 import { ApiTags, ApiOperation, ApiQuery, ApiBody, ApiResponse } from '@nestjs/swagger'
 import { GatewayService } from './gateway.service'
 import { EventDto } from '../common/dto/event'
-import { AnalyzeParams } from '../common/dto/analyzeParams'
 import { getEventParams } from '../common/dto/eventParams'
 
 @ApiTags('埋点数据网关')
@@ -128,98 +127,6 @@ export class GatewayController {
       getParams.startTime,
       getParams.endTime,
       getParams.limit
-    )
-  }
-
-  @ApiOperation({
-    summary: 'AI分析所有事件',
-    description: '使用AI分析所有类型的事件数据，提供洞察和建议',
-  })
-  @ApiQuery({ name: 'time', required: false, description: '时间范围，如 1d、1w、1m' })
-  @ApiQuery({ name: 'startTime', required: false, description: '开始时间，ISO 8601 格式' })
-  @ApiQuery({ name: 'endTime', required: false, description: '结束时间，ISO 8601 格式' })
-  @ApiResponse({
-    status: 200,
-    description: '分析成功',
-    type: Object,
-    example: { code: 200, data: '分析结果文本' },
-  })
-  @Get('analyzeAll')
-  analyzeAll(@Query() getParams: getEventParams) {
-    return this.gatewayService.analyzeEvent(
-      'all',
-      getParams.time,
-      getParams.startTime,
-      getParams.endTime
-    )
-  }
-
-  @ApiOperation({
-    summary: 'AI分析错误事件',
-    description: '使用AI分析错误类型的事件数据，提供洞察和建议',
-  })
-  @ApiQuery({ name: 'time', required: false, description: '时间范围，如 1d、1w、1m' })
-  @ApiQuery({ name: 'startTime', required: false, description: '开始时间，ISO 8601 格式' })
-  @ApiQuery({ name: 'endTime', required: false, description: '结束时间，ISO 8601 格式' })
-  @ApiResponse({
-    status: 200,
-    description: '分析成功',
-    type: Object,
-    example: { code: 200, data: '分析结果文本' },
-  })
-  @Get('analyzeError')
-  analyzeError(@Query() getParams: getEventParams) {
-    return this.gatewayService.analyzeEvent(
-      'error',
-      getParams.time,
-      getParams.startTime,
-      getParams.endTime
-    )
-  }
-
-  @ApiOperation({
-    summary: 'AI分析用户行为事件',
-    description: '使用AI分析用户行为类型的事件数据，提供洞察和建议',
-  })
-  @ApiQuery({ name: 'time', required: false, description: '时间范围，如 1d、1w、1m' })
-  @ApiQuery({ name: 'startTime', required: false, description: '开始时间，ISO 8601 格式' })
-  @ApiQuery({ name: 'endTime', required: false, description: '结束时间，ISO 8601 格式' })
-  @ApiResponse({
-    status: 200,
-    description: '分析成功',
-    type: Object,
-    example: { code: 200, data: '分析结果文本' },
-  })
-  @Get('analyzeUserBehavior')
-  analyzeUserBehavior(@Query() getParams: getEventParams) {
-    return this.gatewayService.analyzeEvent(
-      'userBehavior',
-      getParams.time,
-      getParams.startTime,
-      getParams.endTime
-    )
-  }
-
-  @ApiOperation({
-    summary: 'AI分析性能事件',
-    description: '使用AI分析性能类型的事件数据，提供洞察和建议',
-  })
-  @ApiQuery({ name: 'time', required: false, description: '时间范围，如 1d、1w、1m' })
-  @ApiQuery({ name: 'startTime', required: false, description: '开始时间，ISO 8601 格式' })
-  @ApiQuery({ name: 'endTime', required: false, description: '结束时间，ISO 8601 格式' })
-  @ApiResponse({
-    status: 200,
-    description: '分析成功',
-    type: Object,
-    example: { code: 200, data: '分析结果文本' },
-  })
-  @Get('analyzePerformance')
-  analyzePerformance(@Query() getParams: AnalyzeParams) {
-    return this.gatewayService.analyzeEvent(
-      'performance',
-      getParams.time,
-      getParams.startTime,
-      getParams.endTime
     )
   }
 
