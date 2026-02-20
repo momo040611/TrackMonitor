@@ -1,10 +1,13 @@
 import axios from 'axios'
-import * as auth from '../auth-provider'
 import { useCallback } from 'react'
 
 const request = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || '/api', // 使用环境变量或默认值
+  baseURL: import.meta.env.VITE_API_URL,
   timeout: 5000,
+  // 明确指定 200-299 之间的状态码为成功响应
+  validateStatus: (status) => {
+    return status >= 200 && status < 300
+  },
 })
 
 // 请求拦截器
@@ -13,7 +16,7 @@ request.interceptors.request.use(
     // 从本地存储获取 token
     const token = localStorage.getItem('__auth_provider_token__')
     // 如果有 token，添加到请求头
-    if (token) {
+    if (token && typeof token === 'string' && /^[\x00-\x7F]*$/.test(token)) {
       config.headers.Authorization = `Bearer ${token}`
     }
     return config
@@ -27,35 +30,16 @@ request.interceptors.request.use(
 request.interceptors.response.use(
   (res) => {
     const data = res.data
-    // 处理成功响应，但检查是否包含业务错误
-    if (data && typeof data === 'object') {
-      // 检查是否是业务错误（状态码是200，但包含错误信息）
-      // 同时支持code和status字段
-      const statusCode = 'status' in data ? data.status : 'code' in data ? data.code : 200
-      if (statusCode !== 200) {
-        // 确保错误对象包含message属性
-        if ('message' in data) {
-          return Promise.reject(data)
-        } else if ('error' in data) {
-          return Promise.reject({ message: data.error })
-        } else {
-          return Promise.reject({ message: '请求失败，请稍后重试' })
-        }
-      }
-    }
     return data
   },
   (err) => {
-    console.log('请求错误：', err)
     const response = err.response
 
     // 处理HTTP错误状态码
     if (response) {
-      // 对于401错误，清除token并刷新页面
+      // 处理401错误（用户名或密码错误）
       if (response.status === 401) {
-        auth.logout()
-        window.location.reload()
-        return Promise.reject({ message: '请重新登录' })
+        return Promise.reject({ message: '用户名或密码错误' })
       }
 
       // 处理其他错误状态码
@@ -65,6 +49,8 @@ request.interceptors.response.use(
           return Promise.reject(data)
         } else if ('error' in data) {
           return Promise.reject({ message: data.error })
+        } else if ('statusCode' in data) {
+          return Promise.reject({ message: data.message || '服务器内部错误' })
         }
       }
     }

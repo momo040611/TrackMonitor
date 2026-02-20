@@ -9,10 +9,14 @@ export const LoginScreen = ({ onError }: { onError: (error: Error) => void }) =>
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    console.log('Handle submit called with username:', username, 'password:', password)
     try {
       setIsLoading(true)
+      console.log('About to call login')
       await login({ username, password })
+      console.log('Login completed successfully')
     } catch (e) {
+      console.log('Login error:', e)
       onError(e as Error)
     } finally {
       setIsLoading(false)

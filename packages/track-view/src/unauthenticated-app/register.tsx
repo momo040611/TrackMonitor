@@ -8,6 +8,7 @@ export const RegisterScreen = ({ onError }: { onError: (error: Error) => void })
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [cpassword, setCpassword] = useState('')
+  const [email, setEmail] = useState('')
   const [usernameError, setUsernameError] = useState('')
   const [isCheckingUsername, setIsCheckingUsername] = useState(false)
 
@@ -33,6 +34,18 @@ export const RegisterScreen = ({ onError }: { onError: (error: Error) => void })
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!username.trim()) {
+      onError(new Error('请输入用户名'))
+      return
+    }
+    if (!email.trim()) {
+      onError(new Error('请输入邮箱'))
+      return
+    }
+    if (!password) {
+      onError(new Error('请输入密码'))
+      return
+    }
     if (cpassword !== password) {
       onError(new Error('请确认两次输入的密码相同'))
       return
@@ -43,9 +56,26 @@ export const RegisterScreen = ({ onError }: { onError: (error: Error) => void })
     }
     try {
       setIsLoading(true)
-      await register({ username, password })
-    } catch (e) {
-      onError(e as Error)
+      await register({ username, password, email })
+    } catch (e: any) {
+      console.log('注册错误：', e)
+      // 处理后端返回的错误
+      if (e.message && e.message.includes('Duplicate entry')) {
+        // 尝试解析错误信息，判断是哪个字段重复
+        if (e.message.includes('username')) {
+          onError(new Error('用户名已存在'))
+        } else if (e.message.includes('email')) {
+          onError(new Error('邮箱已存在'))
+        } else {
+          onError(new Error('注册失败，请稍后重试'))
+        }
+      } else if (e.message && e.message.includes('Username is already taken')) {
+        onError(new Error('用户名已存在'))
+      } else if (e.message) {
+        onError(new Error(e.message))
+      } else {
+        onError(e as Error)
+      }
     } finally {
       setIsLoading(false)
     }
@@ -68,6 +98,12 @@ export const RegisterScreen = ({ onError }: { onError: (error: Error) => void })
           <div style={{ color: '#666', fontSize: '12px', marginTop: '4px' }}>检查用户名...</div>
         )}
       </div>
+      <StyledInput
+        type="email"
+        placeholder="请输入邮箱"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+      />
       <StyledInput
         type="password"
         placeholder="请输入密码"

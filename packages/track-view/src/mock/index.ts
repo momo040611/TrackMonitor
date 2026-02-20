@@ -1,11 +1,5 @@
 import type { MockMethod } from 'vite-plugin-mock'
 
-console.log('Mock module loaded')
-// 只在 Node.js 环境中打印当前工作目录
-if (typeof process !== 'undefined') {
-  console.log('Current working directory:', process.cwd())
-}
-
 // 模拟用户数据
 const mockUsers = [
   { id: '1', username: 'admin', password: '123456', token: 'mock-token-admin' },

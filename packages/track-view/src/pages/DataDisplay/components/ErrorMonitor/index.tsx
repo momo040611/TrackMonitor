@@ -28,10 +28,23 @@ const ErrorMonitor: React.FC = () => {
   const fetchErrorData = async () => {
     setIsLoading(true)
     try {
-      const data = await api.getErrorData()
-      setErrorData(Array.isArray(data) ? data : [])
+      const result = await api.getErrorData()
+      // 检查后端返回的数据格式
+      if (result && typeof result === 'object') {
+        if ('data' in result) {
+          // 格式1: { data: [...] }
+          setErrorData(Array.isArray(result.data) ? result.data : [])
+        } else if (Array.isArray(result)) {
+          // 格式2: [...] 直接是数组
+          setErrorData(result)
+        } else {
+          // 其他格式
+          setErrorData([])
+        }
+      } else {
+        setErrorData([])
+      }
     } catch (error) {
-      console.error('获取错误数据失败:', error)
       setErrorData([])
     } finally {
       setIsLoading(false)

@@ -44,12 +44,8 @@ const UserTracking: React.FC<UserTrackingProps> = () => {
     if (!trackerRef.current) {
       // 模拟 tracker 实例
       trackerRef.current = {
-        track: (event: string, data: any) => {
-          console.log('Tracking event:', event, data)
-        },
-        use: (plugin: any) => {
-          console.log('Using plugin:', plugin)
-        },
+        track: (event: string, data: any) => {},
+        use: (plugin: any) => {},
       }
     }
   }
@@ -81,7 +77,6 @@ const UserTracking: React.FC<UserTrackingProps> = () => {
       // 开始定期获取数据
       startDataPolling()
     } catch (error) {
-      console.error('开始追踪失败:', error)
       message.error('开始追踪失败')
       setIsTracking(false)
     } finally {
@@ -156,7 +151,6 @@ const UserTracking: React.FC<UserTrackingProps> = () => {
         }
       }
     } catch (error) {
-      console.error('获取追踪数据失败:', error)
       message.error('获取追踪数据失败')
     }
   }
@@ -245,7 +239,7 @@ const UserTracking: React.FC<UserTrackingProps> = () => {
                   <Statistic
                     title="追踪状态"
                     value={isTracking ? '活跃' : '非活跃'}
-                    valueStyle={{ color: isTracking ? '#52c41a' : '#faad14' }}
+                    styles={{ content: { color: isTracking ? '#52c41a' : '#faad14' } }}
                   />
                 </Col>
               </Row>
@@ -334,7 +328,7 @@ const UserTracking: React.FC<UserTrackingProps> = () => {
               </Card>
             </Col>
             <Col span={24}>
-              <Card title="追踪事件" bodyStyle={{ maxHeight: '400px', overflowY: 'auto' }}>
+              <Card title="追踪事件" styles={{ body: { maxHeight: '400px', overflowY: 'auto' } }}>
                 <Table
                   dataSource={trackingData}
                   columns={[

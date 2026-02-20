@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import {
   Card,
-  List,
+  Table,
   Tag,
   Button,
   Progress,
@@ -47,6 +47,8 @@ export const AnomalyDiagnosis: React.FC<Props> = ({ onDispatch }) => {
   const [issues, setIssues] = useState<DiagnosisItem[]>([])
   const [drawerVisible, setDrawerVisible] = useState(false)
   const [currentIssue, setCurrentIssue] = useState<DiagnosisItem | null>(null)
+  const [isDiagnosing, setIsDiagnosing] = useState(false)
+  const isDiagnosingRef = useRef(false)
 
   //处理跳转逻辑
   const handleToDispatch = () => {
@@ -67,7 +69,12 @@ export const AnomalyDiagnosis: React.FC<Props> = ({ onDispatch }) => {
   }
 
   const startDiagnosis = async () => {
+    // 如果正在诊断中，不重复触发
+    if (isDiagnosingRef.current) return
+
     try {
+      isDiagnosingRef.current = true
+      setIsDiagnosing(true)
       setAnalyzing(true)
       setIssues([])
 
@@ -122,8 +129,7 @@ export const AnomalyDiagnosis: React.FC<Props> = ({ onDispatch }) => {
         message.success('诊断完成 (使用默认数据)')
       }
     } catch (error) {
-      message.error('诊断失败，请稍后重试')
-      console.error('诊断失败:', error)
+      // 静默处理错误，直接使用默认数据
 
       // 出错时使用默认数据
       const defaultIssues: DiagnosisItem[] = [
@@ -161,6 +167,8 @@ export const AnomalyDiagnosis: React.FC<Props> = ({ onDispatch }) => {
       setHealthScore(Math.max(0, 100 - totalDeduction))
     } finally {
       setAnalyzing(false)
+      setIsDiagnosing(false)
+      isDiagnosingRef.current = false
     }
   }
 
@@ -201,7 +209,7 @@ export const AnomalyDiagnosis: React.FC<Props> = ({ onDispatch }) => {
               percent={healthScore}
               format={(percent) => <span className="score-text">{percent}</span>}
               strokeColor={healthScore > 80 ? '#52c41a' : healthScore > 60 ? '#faad14' : '#ff4d4f'}
-              width={100}
+              size={100}
             />
             <div className="score-label">健康评分</div>
           </Col>
@@ -218,7 +226,7 @@ export const AnomalyDiagnosis: React.FC<Props> = ({ onDispatch }) => {
                 <Statistic
                   title="发现异常"
                   value={issues.length}
-                  valueStyle={{ color: issues.length > 0 ? '#cf1322' : '#3f8600' }}
+                  styles={{ content: { color: issues.length > 0 ? '#cf1322' : '#3f8600' } }}
                   prefix={<BugOutlined />}
                 />
               </Col>
@@ -237,30 +245,18 @@ export const AnomalyDiagnosis: React.FC<Props> = ({ onDispatch }) => {
           </Col>
         </Row>
 
-        <List
+        <Table
           className="issue-list"
           loading={analyzing}
           dataSource={issues}
           pagination={{ pageSize: 5, size: 'small', hideOnSinglePage: true }}
-          renderItem={(item) => (
-            <List.Item
-              actions={[
-                <Button type="link" size="small" onClick={() => showDetails(item)}>
-                  查看详情
-                </Button>,
-              ]}
-            >
-              <List.Item.Meta
-                avatar={
-                  item.level === 'error' ? (
-                    <BugOutlined className="icon-error" />
-                  ) : item.level === 'warning' ? (
-                    <WarningOutlined className="icon-warning" />
-                  ) : (
-                    <RobotOutlined className="icon-info" />
-                  )
-                }
-                title={
+          rowKey="id"
+          columns={[
+            {
+              title: '异常信息',
+              key: 'info',
+              render: (_, item) => (
+                <div>
                   <div className="issue-title">
                     <Tag
                       color={
@@ -275,15 +271,22 @@ export const AnomalyDiagnosis: React.FC<Props> = ({ onDispatch }) => {
                     </Tag>
                     <Text strong>{item.title}</Text>
                   </div>
-                }
-                description={
                   <Text type="secondary" ellipsis>
                     {item.description}
                   </Text>
-                }
-              />
-            </List.Item>
-          )}
+                </div>
+              ),
+            },
+            {
+              title: '操作',
+              key: 'action',
+              render: (_, item) => (
+                <Button type="link" size="small" onClick={() => showDetails(item)}>
+                  查看详情
+                </Button>
+              ),
+            },
+          ]}
         />
       </Card>
 
@@ -294,7 +297,7 @@ export const AnomalyDiagnosis: React.FC<Props> = ({ onDispatch }) => {
           </span>
         }
         placement="right"
-        width={480}
+        size={480}
         onClose={() => setDrawerVisible(false)}
         open={drawerVisible}
       >

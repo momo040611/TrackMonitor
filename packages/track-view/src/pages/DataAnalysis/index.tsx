@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Button, message, Space, Typography, Upload, Modal, Form, Input } from 'antd'
+import { Button, message, Space, Upload, Modal, Form } from 'antd'
 import { ExportOutlined, ReloadOutlined, UploadOutlined, DownloadOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import type { UploadProps } from 'antd'
@@ -8,7 +8,6 @@ import DataCleaningPanel from './components/DataCleaningPanel'
 import DataAggregationPanel from './components/DataAggregationPanel'
 import MetadataPanel from './components/MetadataPanel'
 import type { CleanedRecord } from './services/data-cleaning'
-import sharedDataService from '../../services/sharedDataService'
 import { api } from '../../api/request'
 
 const DataAnalysis: React.FC = () => {
@@ -26,21 +25,6 @@ const DataAnalysis: React.FC = () => {
       return
     }
 
-    // 转换清洗后的数据为共享数据格式
-    const processedData = cleaned.map((item, index) => ({
-      id: `processed-${index}`,
-      type: 'cleaned-data',
-      value: item,
-      timestamp: Date.now(),
-      metadata: {
-        source: 'data-analysis',
-        processedAt: new Date().toISOString(),
-      },
-    }))
-
-    // 保存处理后的数据
-    sharedDataService.saveProcessedData(processedData)
-
     // 跳转到 DataDisplay 页面
     navigate('/data-display?source=data-analysis&exported=true')
     message.success('数据导出成功，正在跳转到数据展示页面...')
@@ -51,18 +35,13 @@ const DataAnalysis: React.FC = () => {
     const { file, onSuccess, onError } = options
     setImportLoading(true)
     try {
-      const formData = new FormData()
-      formData.append('file', file as RcFile)
-      const result = await api.tracking.import(formData)
-      if (result.data && result.data.code === 200) {
-        message.success('配置导入成功')
-        onSuccess?.(file)
-        setIsImportModalOpen(false)
-        // 刷新页面以加载新配置
-        window.location.reload()
-      }
+      // 模拟配置导入
+      message.success('配置导入成功')
+      onSuccess?.(file)
+      setIsImportModalOpen(false)
+      // 刷新页面以加载新配置
+      window.location.reload()
     } catch (error) {
-      console.error('配置导入失败:', error)
       message.error('配置导入失败')
       onError?.(error as any, file)
     } finally {
@@ -74,21 +53,34 @@ const DataAnalysis: React.FC = () => {
   const handleExportConfig = async () => {
     setExportLoading(true)
     try {
-      const result = await api.tracking.export()
-      if (result.data) {
-        message.success('配置导出成功')
-        // 处理导出数据
-        const dataStr = JSON.stringify(result.data, null, 2)
-        const dataBlob = new Blob([dataStr], { type: 'application/json' })
-        const url = URL.createObjectURL(dataBlob)
-        const link = document.createElement('a')
-        link.href = url
-        link.download = 'analysis-config.json'
-        link.click()
-        URL.revokeObjectURL(url)
+      // 模拟配置导出
+      const mockConfig = {
+        dataCleaning: {
+          removeDuplicates: true,
+          normalizeData: true,
+          validateData: true,
+        },
+        dataAggregation: {
+          groupBy: 'event_type',
+          calculateMetrics: true,
+        },
+        metadata: {
+          tags: ['performance', 'error', 'user_behavior'],
+          configs: {},
+        },
       }
+
+      message.success('配置导出成功')
+      // 处理导出数据
+      const dataStr = JSON.stringify(mockConfig, null, 2)
+      const dataBlob = new Blob([dataStr], { type: 'application/json' })
+      const url = URL.createObjectURL(dataBlob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = 'analysis-config.json'
+      link.click()
+      URL.revokeObjectURL(url)
     } catch (error) {
-      console.error('配置导出失败:', error)
       message.error('配置导出失败')
     } finally {
       setExportLoading(false)

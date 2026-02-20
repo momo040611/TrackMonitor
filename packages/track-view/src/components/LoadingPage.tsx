@@ -20,7 +20,7 @@ const LoadingPage: React.FC<LoadingPageProps> = ({ message = '加载中...' }) =
         padding: '24px',
       }}
     >
-      <Space direction="vertical" size="middle" style={{ textAlign: 'center' }}>
+      <Space orientation="vertical" size="middle" style={{ textAlign: 'center' }}>
         <Spin
           indicator={<LoadingOutlined style={{ fontSize: 48, color: '#1890ff' }} spin />}
           size="large"

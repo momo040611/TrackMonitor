@@ -104,7 +104,6 @@ export const LogParser: React.FC<Props> = ({ initialLog, onDispatch }) => {
       }
     } catch (error) {
       message.error('日志解析失败，请稍后重试')
-      console.error('日志解析失败:', error)
 
       // 出错时使用默认数据
       setParseResult(mockResult)
@@ -242,22 +241,22 @@ ${inputText.substring(0, 150)}...
           items={[
             {
               title: '日志采集',
-              description: 'Raw Log',
+              content: 'Raw Log',
               icon: <FileSearchOutlined />,
             },
             {
               title: '向量嵌入',
-              description: 'Sentence-BERT',
+              content: 'Sentence-BERT',
               icon: <DeploymentUnitOutlined />,
             },
             {
               title: '大模型推理',
-              description: 'GPT-4o / Qwen',
+              content: 'GPT-4o / Qwen',
               icon: <CloudServerOutlined />,
             },
             {
               title: '结构化存储',
-              description: 'Structured DB',
+              content: 'Structured DB',
               icon: <DatabaseOutlined />,
             },
           ]}

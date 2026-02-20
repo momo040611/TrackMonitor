@@ -26,7 +26,7 @@ import {
   DeleteOutlined,
 } from '@ant-design/icons'
 import type { UploadProps } from 'antd'
-import type { RcFile } from 'antd/es/upload'
+import { api } from '../../../../api/request'
 
 const { Option } = Select
 const { TextArea } = Input
@@ -151,70 +151,143 @@ const TrackingConfig: React.FC = () => {
   }
 
   // 处理表格行操作
-  const handleEdit = (record: TrackingDataItem) => {
-    message.info(`编辑埋点: ${record.name}`)
-  }
-
-  const handlePreview = (record: TrackingDataItem) => {
-    message.info(`预览埋点: ${record.name}`)
-  }
-
-  const handleDisable = (record: TrackingDataItem) => {
-    message.success(`已失效埋点: ${record.name}`)
-    const updatedData = trackingData.map((item) => {
-      if (item.key === record.key) {
-        return { ...item, status: 'inactive' as const, statusText: '已失效', statusIcon: '❌' }
+  const handleEdit = async (record: TrackingDataItem) => {
+    try {
+      const eventData = await api.getEventById(record.id)
+      if (eventData.data) {
+        // 填充表单数据
+        form.setFieldsValue({
+          name: eventData.data.name,
+          event: eventData.data.event,
+          frequency: eventData.data.frequency,
+          properties: eventData.data.properties,
+          trigger: eventData.data.trigger,
+          stayTime: eventData.data.stayTime,
+          remark: eventData.data.remark,
+        })
+        setIsModalOpen(true)
       }
-      return item
-    })
-    setTrackingData(updatedData)
+    } catch (error) {
+      message.error('编辑埋点失败')
+    }
   }
 
-  const handlePublish = (record: TrackingDataItem) => {
-    message.success(`已发布埋点: ${record.name}`)
-    const updatedData = trackingData.map((item) => {
-      if (item.key === record.key) {
-        return { ...item, status: 'active' as const, statusText: '已生效', statusIcon: '✅' }
+  const handlePreview = async (record: TrackingDataItem) => {
+    try {
+      const eventData = await api.getEventById(record.id)
+      if (eventData.data) {
+        message.info(
+          `预览埋点: ${record.name}\n类型: ${eventData.data.type}\n触发条件: ${eventData.data.trigger}`
+        )
       }
-      return item
-    })
-    setTrackingData(updatedData)
+    } catch (error) {
+      message.error('预览埋点失败')
+    }
   }
 
-  const handleDelete = (record: TrackingDataItem) => {
+  const handleDisable = async (record: TrackingDataItem) => {
+    try {
+      const result = await api.updateEvent({ id: record.id, status: 'inactive' })
+      if (result.status === 0 || result.status === 200) {
+        message.success(`已失效埋点: ${record.name}`)
+        const updatedData = trackingData.map((item) => {
+          if (item.key === record.key) {
+            return { ...item, status: 'inactive' as const, statusText: '已失效', statusIcon: '❌' }
+          }
+          return item
+        })
+        setTrackingData(updatedData)
+      }
+    } catch (error) {
+      message.error('失效埋点失败')
+    }
+  }
+
+  const handlePublish = async (record: TrackingDataItem) => {
+    try {
+      const result = await api.updateEvent({ id: record.id, status: 'active' })
+      if (result.status === 0 || result.status === 200) {
+        message.success(`已发布埋点: ${record.name}`)
+        const updatedData = trackingData.map((item) => {
+          if (item.key === record.key) {
+            return { ...item, status: 'active' as const, statusText: '已生效', statusIcon: '✅' }
+          }
+          return item
+        })
+        setTrackingData(updatedData)
+      }
+    } catch (error) {
+      message.error('发布埋点失败')
+    }
+  }
+
+  const handleDelete = async (record: TrackingDataItem) => {
     Modal.confirm({
       title: '删除埋点',
       content: `确定要删除埋点 "${record.name}" 吗？`,
-      onOk: () => {
-        message.success(`已删除埋点: ${record.name}`)
-        const updatedData = trackingData.filter((item) => item.key !== record.key)
-        setTrackingData(updatedData)
+      onOk: async () => {
+        try {
+          const result = await api.deleteEvent(record.id)
+          if (result.status === 0 || result.status === 200) {
+            message.success(`已删除埋点: ${record.name}`)
+            const updatedData = trackingData.filter((item) => item.key !== record.key)
+            setTrackingData(updatedData)
+          }
+        } catch (error) {
+          message.error('删除埋点失败')
+        }
       },
     })
   }
 
-  const handleRecover = (record: TrackingDataItem) => {
-    message.success(`已恢复埋点: ${record.name}`)
-    const updatedData = trackingData.map((item) => {
-      if (item.key === record.key) {
-        return { ...item, status: 'active' as const, statusText: '已生效', statusIcon: '✅' }
+  const handleRecover = async (record: TrackingDataItem) => {
+    try {
+      const result = await api.updateEvent({ id: record.id, status: 'active' })
+      if (result.status === 0 || result.status === 200) {
+        message.success(`已恢复埋点: ${record.name}`)
+        const updatedData = trackingData.map((item) => {
+          if (item.key === record.key) {
+            return { ...item, status: 'active' as const, statusText: '已生效', statusIcon: '✅' }
+          }
+          return item
+        })
+        setTrackingData(updatedData)
       }
-      return item
-    })
-    setTrackingData(updatedData)
+    } catch (error) {
+      message.error('恢复埋点失败')
+    }
   }
 
   // 获取埋点配置数据
   const fetchTrackingData = async () => {
     setIsLoading(true)
     try {
-      const response = await fetch('/api/tracking/list')
-      const result = await response.json()
-      if (result.code === 200) {
-        setTrackingData(result.data)
+      const result = await api.getAllEvents()
+      if (result.data) {
+        const data = Array.isArray(result.data) ? result.data : []
+        setTrackingData(
+          data.map((item: any) => ({
+            key: item.id || `key-${Date.now()}-${Math.random()}`,
+            id: item.id || `track-${Date.now()}-${Math.random()}`,
+            name: item.name || '未命名埋点',
+            type: item.type || 'click',
+            page: item.page || '未知页面',
+            trigger: item.trigger || 'click',
+            status: item.status || 'pending',
+            statusText:
+              item.status === 'active'
+                ? '已生效'
+                : item.status === 'inactive'
+                  ? '已失效'
+                  : '待发布',
+            statusIcon: item.status === 'active' ? '✅' : item.status === 'inactive' ? '❌' : '⏳',
+          }))
+        )
+      } else {
+        setTrackingData([])
       }
     } catch (error) {
-      console.error('获取埋点配置数据失败:', error)
+      setTrackingData([])
     } finally {
       setIsLoading(false)
     }
@@ -497,7 +570,7 @@ const TrackingConfig: React.FC = () => {
               >
                 <iframe
                   ref={iframeRef}
-                  src=""
+                  src={url || undefined}
                   style={{ width: '100%', height: '100%', border: 'none' }}
                   title="页面预览"
                 />

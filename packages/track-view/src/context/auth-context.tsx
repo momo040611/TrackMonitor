@@ -7,6 +7,7 @@ import type { User } from '../types'
 interface AuthForm {
   username: string
   password: string
+  email?: string
 }
 
 const bootstrapUser = async () => {
@@ -15,10 +16,21 @@ const bootstrapUser = async () => {
 
   if (token) {
     try {
-      const result = (await auth.getCurrentUser?.()) ?? null
-      user = result
+      // 尝试从本地存储中获取用户对象
+      const userData = localStorage.getItem(token)
+      if (userData) {
+        try {
+          user = JSON.parse(userData)
+        } catch (parseError) {}
+      }
     } catch (error) {
-      console.log('Bootstrap user error:', error)
+      // 如果获取用户信息失败，尝试从本地存储中获取
+      const userData = localStorage.getItem(token)
+      if (userData) {
+        try {
+          user = JSON.parse(userData)
+        } catch (parseError) {}
+      }
     }
   }
   return user
@@ -38,48 +50,9 @@ const AuthContext = React.createContext<
 AuthContext.displayName = 'AuthContext'
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  // 在开发环境下，使用模拟用户，避免因后端接口不可用导致的登录循环问题
-  if (process.env.NODE_ENV === 'development') {
-    console.log('Development mode: Using mock user')
-    const [user, setUser] = React.useState<User | null>({
-      id: '1',
-      username: 'admin',
-      token: 'mock-token-admin',
-    } as User)
-
-    const login = (form: AuthForm) =>
-      Promise.resolve().then(() => {
-        setUser({ id: '1', username: form.username, token: 'mock-token-admin' } as User)
-      })
-    const register = (form: AuthForm) =>
-      Promise.resolve().then(() => {
-        setUser({ id: '1', username: form.username, token: 'mock-token-admin' } as User)
-      })
-    const logout = () =>
-      Promise.resolve().then(() => {
-        setUser(null)
-      })
-    const checkUsername = (username: string) => Promise.resolve()
-
-    return (
-      <AuthContext.Provider
-        value={{
-          user,
-          login,
-          register,
-          logout,
-          checkUsername,
-        }}
-      >
-        {children}
-      </AuthContext.Provider>
-    )
-  }
-
-  // 生产环境下的正常认证逻辑
+  // 使用真实后端接口的认证逻辑
   const { data: user, isLoading, isIdle, isError, run, setData: setUser } = useAsync<User | null>()
 
-  // point free
   const login = (form: AuthForm) => auth.login(form).then(setUser)
   const register = (form: AuthForm) => auth.register(form).then(setUser)
   const logout = () =>

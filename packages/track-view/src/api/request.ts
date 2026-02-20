@@ -8,8 +8,12 @@ export const api = {
     return request.post('/user/login', data)
   },
 
-  register: (data: { username: string; password: string }) => {
+  register: (data: { username: string; password: string; email?: string }) => {
     return request.post('/user/register', data)
+  },
+
+  checkUsername: (data: { username: string }) => {
+    return request.post('/user/check-username', data)
   },
 
   refreshToken: (data: any) => {
@@ -20,7 +24,19 @@ export const api = {
     return request.get(`/user/${id}`)
   },
 
-  // 性能和错误事件接口
+  getCurrentUser: () => {
+    return request.get('/auth/profile')
+  },
+
+  // 埋点数据网关接口
+  uploadEvent: (data: any) => {
+    return request.post('/gateway/event', data)
+  },
+
+  uploadEvents: (data: any) => {
+    return request.post('/gateway/events', data)
+  },
+
   getPerformanceData: (params?: { projectId: string; timeRange: string }) => {
     return request.get('/gateway/getPerformance', { params })
   },
@@ -41,28 +57,41 @@ export const api = {
     return request.get('/gateway/getEvent', { params })
   },
 
+  getEventById: (id: string) => {
+    return request.get(`/gateway/getEventById?id=${id}`)
+  },
+
+  updateEvent: (data: any) => {
+    return request.put('/gateway/updateEvent', data)
+  },
+
+  deleteEvent: (id: string) => {
+    return request.delete(`/gateway/deleteEvent?id=${id}`)
+  },
+
   // AI 分析接口
-  analyzeAllEvents: (params?: { projectId: string; timeRange: string }) => {
-    return request.get('/gateway/analyzeAll', { params })
+  analyzeAllEvents: (params?: { time: string; startTime?: string; endTime?: string }) => {
+    return request.get('/ai/analyzeAll', { params })
   },
 
-  analyzeErrorEvents: (params?: { projectId: string; timeRange: string }) => {
-    return request.get('/gateway/analyzeError', { params })
+  analyzeErrorEvents: (params?: { time: string; startTime?: string; endTime?: string }) => {
+    return request.get('/ai/analyzeError', { params })
   },
 
-  analyzeUserBehaviorEvents: (params?: { projectId: string; timeRange: string }) => {
-    return request.get('/gateway/analyzeUserBehavior', { params })
+  analyzeUserBehaviorEvents: (params?: { time: string; startTime?: string; endTime?: string }) => {
+    return request.get('/ai/analyzeUserBehavior', { params })
   },
 
-  analyzePerformanceEvents: (params?: { projectId: string; timeRange: string }) => {
-    return request.get('/gateway/analyzePerformance', { params })
+  analyzePerformanceEvents: (params?: { time: string; startTime?: string; endTime?: string }) => {
+    return request.get('/ai/analyzePerformance', { params })
   },
 
-  // 业务相关接口
-  reportEventData: (data: any) => {
+  // Processing 接口
+  processEvent: (data: any) => {
     return request.post('/processing/event', data)
   },
 
+  // Business 接口
   getBusinessAnalysis: (params?: { projectId: string; timeRange: string }) => {
     return request.get('/business/analysis', { params })
   },
@@ -75,12 +104,7 @@ export const api = {
     return request.get('/business/user-behavior', { params })
   },
 
-  // AI 代码生成接口 (暂时保留，后续可根据后端实际接口调整)
-  generateCode: (data: { requirement: string }) => {
-    return request.post('/api/ai/generate-code', data)
-  },
-
-  // 数据分析相关接口 (暂时保留，后续可根据后端实际接口调整)
+  // 数据分析相关接口
   getOverviewData: () => {
     return request.get('/gateway/getAll')
   },
@@ -95,48 +119,5 @@ export const api = {
 
   getRealtimeData: () => {
     return request.get('/gateway/getAll')
-  },
-
-  // 埋点配置相关接口
-  tracking: {
-    // 获取埋点列表
-    getList: () => {
-      return request.get('/api/tracking/list')
-    },
-
-    // 新增埋点
-    create: (data: any) => {
-      return request.post('/api/tracking/create', data)
-    },
-
-    // 编辑埋点
-    update: (data: any) => {
-      return request.put('/api/tracking/update', data)
-    },
-
-    // 发布埋点
-    publish: (data: { ids: string[] }) => {
-      return request.post('/api/tracking/publish', data)
-    },
-
-    // 失效埋点
-    disable: (data: { ids: string[] }) => {
-      return request.post('/api/tracking/disable', data)
-    },
-
-    // 删除埋点
-    delete: (data: { ids: string[] }) => {
-      return request.delete('/api/tracking/delete', { data })
-    },
-
-    // 导入配置
-    import: (data: any) => {
-      return request.post('/api/tracking/import', data)
-    },
-
-    // 导出配置
-    export: () => {
-      return request.get('/api/tracking/export')
-    },
   },
 }

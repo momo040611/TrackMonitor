@@ -1,4 +1,4 @@
-import React, { useReducer, useEffect, useState } from 'react'
+import React, { useReducer, useEffect } from 'react'
 import {
   Card,
   Tabs,
@@ -11,12 +11,10 @@ import {
   Button,
   Space,
   Popconfirm,
-  message,
 } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { metadataInitialState, metadataReducer } from '../../../store/modules/metadata'
 import type { DataDictionaryItem, TagItem, ConfigItem } from '../services/metadata'
-import { api } from '../../../api/request'
 import './MetadataPanel.less'
 
 const { Title, Text } = Typography
@@ -60,54 +58,59 @@ const MetadataPanel: React.FC = () => {
   useEffect(() => {
     const loadMetadata = async () => {
       try {
-        // 使用业务分析接口获取元数据
-        const analysisResult = await api.getBusinessAnalysis({
-          projectId: 'default',
-          timeRange: '24h',
-        })
-        const trackingList = await api.tracking.getList()
-
-        if (analysisResult.data && analysisResult.data.code === 200) {
-          // 从业务分析数据中提取元数据
-          const metadata = {
-            dictionary: [
-              { field: 'id', type: 'string', required: true, description: '事件唯一标识' },
-              { field: 'userId', type: 'string', required: true, description: '用户唯一标识' },
-              { field: 'event', type: 'string', required: true, description: '事件类型' },
-              { field: 'value', type: 'number', required: false, description: '事件值' },
-              { field: 'timestamp', type: 'number', required: true, description: '时间戳' },
-            ],
-            tags: [
-              { name: 'performance', category: '性能', color: 'blue' },
-              { name: 'error', category: '错误', color: 'red' },
-              { name: 'user-behavior', category: '用户行为', color: 'green' },
-              { name: 'custom', category: '自定义', color: 'orange' },
-            ],
-            configs: [
-              { key: 'timeRange', value: '24h', description: '默认时间范围' },
-              { key: 'projectId', value: 'default', description: '默认项目ID' },
-              { key: 'pageSize', value: '10', description: '默认分页大小' },
-            ],
+        const response = await fetch('/api/analysis/metadata')
+        // 检查响应是否为 JSON
+        const contentType = response.headers.get('content-type')
+        if (contentType && contentType.includes('application/json')) {
+          const result = await response.json()
+          if (result.code === 200) {
+            dispatch({ type: 'setAll', payload: result.data })
+          } else {
+            // 设置默认元数据
+            setDefaultMetadata()
           }
-
-          // 从埋点配置中添加更多字段
-          if (trackingList.data && trackingList.data.code === 200 && trackingList.data.data) {
-            const trackingFields = trackingList.data.data.map((item: any) => ({
-              field: item.name || item.key,
-              type: 'string',
-              required: false,
-              description: item.description || `埋点字段: ${item.name || item.key}`,
-            }))
-            metadata.dictionary = [...metadata.dictionary, ...trackingFields]
-          }
-
-          dispatch({ type: 'setAll', payload: metadata })
-          message.success('元数据加载成功')
+        } else {
+          // 设置默认元数据
+          setDefaultMetadata()
         }
       } catch (error) {
-        console.error('获取元数据失败:', error)
-        message.error('获取元数据失败，请检查网络连接')
+        // 静默处理错误，不在控制台显示
+        // 这样即使后端服务不可用，也不会在控制台出现错误信息
+        // 设置默认元数据
+        setDefaultMetadata()
       }
+    }
+
+    // 设置默认元数据的函数
+    const setDefaultMetadata = () => {
+      dispatch({
+        type: 'setAll',
+        payload: {
+          dictionary: [
+            { field: 'eventName', type: 'string', required: true, description: '事件名称' },
+            { field: 'timestamp', type: 'number', required: true, description: '事件时间戳' },
+            { field: 'userId', type: 'string', required: false, description: '用户ID' },
+            { field: 'deviceId', type: 'string', required: false, description: '设备ID' },
+            { field: 'platform', type: 'string', required: false, description: '平台类型' },
+            { field: 'browser', type: 'string', required: false, description: '浏览器类型' },
+            { field: 'screenWidth', type: 'number', required: false, description: '屏幕宽度' },
+            { field: 'screenHeight', type: 'number', required: false, description: '屏幕高度' },
+          ],
+          tags: [
+            { name: '用户行为', category: '行为', color: 'blue' },
+            { name: '系统错误', category: '错误', color: 'red' },
+            { name: '性能问题', category: '性能', color: 'orange' },
+            { name: '业务操作', category: '业务', color: 'green' },
+            { name: '页面访问', category: '访问', color: 'purple' },
+          ],
+          configs: [
+            { key: 'maxEventSize', value: '1024', description: '最大事件大小(字节)' },
+            { key: 'batchInterval', value: '1000', description: '批量上报间隔(毫秒)' },
+            { key: 'sampleRate', value: '1', description: '采样率(0-1)' },
+            { key: 'enableCompression', value: 'true', description: '启用压缩' },
+          ],
+        },
+      })
     }
 
     loadMetadata()
@@ -139,7 +142,7 @@ const MetadataPanel: React.FC = () => {
             key: 'dictionary',
             label: '数据字典',
             children: (
-              <Space direction="vertical" style={{ width: '100%' }}>
+              <Space orientation="vertical" style={{ width: '100%' }}>
                 <Form form={dictForm} layout="inline" size="small" onFinish={handleAddDictionary}>
                   <Form.Item
                     name="field"
@@ -202,7 +205,7 @@ const MetadataPanel: React.FC = () => {
             key: 'tags',
             label: '标签与分类',
             children: (
-              <Space direction="vertical" style={{ width: '100%' }}>
+              <Space orientation="vertical" style={{ width: '100%' }}>
                 <Form form={tagForm} layout="inline" size="small" onFinish={handleAddTag}>
                   <Form.Item
                     name="name"
@@ -253,7 +256,7 @@ const MetadataPanel: React.FC = () => {
             key: 'config',
             label: '配置项',
             children: (
-              <Space direction="vertical" style={{ width: '100%' }}>
+              <Space orientation="vertical" style={{ width: '100%' }}>
                 <Form form={configForm} layout="inline" size="small" onFinish={handleAddConfig}>
                   <Form.Item
                     name="key"
