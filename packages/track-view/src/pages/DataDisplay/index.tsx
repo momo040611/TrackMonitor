@@ -7,7 +7,7 @@ import {
   BellOutlined,
 } from '@ant-design/icons'
 import DataDashboard from './components/DataDashboard/DataDashboard'
-import TrackingConfig from './components/TrackingConfig/TrackingConfig'
+import TrackingConfig from './components/TrackingConfig'
 import './index.less'
 
 const DataDisplay = () => {
