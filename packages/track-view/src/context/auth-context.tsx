@@ -16,21 +16,10 @@ const bootstrapUser = async () => {
 
   if (token) {
     try {
-      // 尝试从本地存储中获取用户对象
-      const userData = localStorage.getItem(token)
-      if (userData) {
-        try {
-          user = JSON.parse(userData)
-        } catch (parseError) {}
-      }
+      user = await auth.getCurrentUser()
     } catch (error) {
-      // 如果获取用户信息失败，尝试从本地存储中获取
-      const userData = localStorage.getItem(token)
-      if (userData) {
-        try {
-          user = JSON.parse(userData)
-        } catch (parseError) {}
-      }
+      auth.logout()
+      user = null
     }
   }
   return user
@@ -61,16 +50,37 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     })
   const checkUsername = (username: string) => auth.checkUsername(username)
 
+  // 页面初次加载时执行状态拉取
   useEffect(() => {
     run(bootstrapUser())
   }, [run])
 
+  // 根据认证状态渲染不同的 UI
   if (isIdle || isLoading) {
     return (
       <div
-        style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}
+        style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: '100vh',
+          backgroundColor: '#fff',
+        }}
       >
-        加载中...
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <div
+            style={{
+              width: '40px',
+              height: '40px',
+              border: '4px solid #f3f3f3',
+              borderTop: '4px solid #3385ff',
+              borderRadius: '50%',
+              animation: 'spin 1s linear infinite',
+              marginBottom: '16px',
+            }}
+          ></div>
+          <div style={{ fontSize: '16px', color: '#333' }}>加载中...</div>
+        </div>
       </div>
     )
   }
@@ -86,7 +96,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           color: 'red',
         }}
       >
-        加载失败
+        登录状态已过期，请重新登录
       </div>
     )
   }

@@ -30,6 +30,9 @@ request.interceptors.request.use(
 request.interceptors.response.use(
   (res) => {
     const data = res.data
+    if (typeof data === 'string' && data.trim().startsWith('<')) {
+      return Promise.reject({ message: '接口返回了非法的HTML格式 (代理失败或路由回退)' })
+    }
     return data
   },
   (err) => {

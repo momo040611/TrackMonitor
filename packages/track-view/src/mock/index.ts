@@ -54,21 +54,28 @@ const registerMock: MockMethod = {
 
 // 获取当前用户信息接口
 const meMock: MockMethod = {
-  url: '/user/me',
-  method: 'get',
+  url: '/auth/profile',
   response: (options: any) => {
-    const authHeader = options.headers.authorization
+    // 尝试获取请求头里的 token（适配 Bearer 格式）
+    const authHeader = options.headers.authorization || options.headers.Authorization
     if (!authHeader) {
-      return { code: 401, message: '请重新登录' }
+      return { code: 401, message: '无Token，请重新登录' }
     }
 
-    const token = authHeader.split(' ')[1]
+    const token = authHeader.replace('Bearer ', '')
     const user = mockUsers.find((u) => u.token === token)
 
     if (user) {
-      return { code: 200, user }
+      return {
+        status: 0,
+        code: 200,
+        data: {
+          access_token: user.token,
+          user: user,
+        },
+      }
     } else {
-      return { code: 401, message: '请重新登录' }
+      return { code: 401, message: 'Token失效，请重新登录' }
     }
   },
 }
