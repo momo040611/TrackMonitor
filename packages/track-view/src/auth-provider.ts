@@ -63,7 +63,26 @@ export const register = (data: {
   password: string
   email?: string
 }): Promise<User | null> => {
-  return api.register(data).then(handleUserResponse)
+  return api
+    .register(data)
+    .then((response: any) => {
+      const token =
+        response?.data?.access_token ||
+        response?.access_token ||
+        response?.data?.token ||
+        response?.token
+
+      if (token) {
+        // 如果给了 Token，直接走正常解析逻辑
+        return handleUserResponse(response)
+      } else {
+        // 没 Token，拿账号密码自动调一次登录接口
+        return login({ username: data.username, password: data.password })
+      }
+    })
+    .catch((error) => {
+      throw new Error(error?.response?.data?.message || error?.message || '注册失败，请稍后重试')
+    })
 }
 
 export const logout = async () => window.localStorage.removeItem(localStorageKey)
