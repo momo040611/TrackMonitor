@@ -41,7 +41,7 @@ export const handleUserResponse = (response: any) => {
     token: token,
   }
 
-  window.localStorage.setItem(localStorageKey, userData.token)
+  window.localStorage.setItem(localStorageKey, token)
   window.localStorage.setItem(user.token, JSON.stringify(user))
   return user
 }
@@ -88,22 +88,50 @@ export const checkUsername = (username: string): Promise<void> => {
 }
 
 // 添加 getCurrentUser 函数的导出
-export const getCurrentUser = (): Promise<User | null> => {
+export const getCurrentUser = async (): Promise<User | null> => {
   const token = getToken()
-  if (!token) {
-    return Promise.resolve(null)
+  if (!token || token === 'undefined') {
+    window.localStorage.removeItem(localStorageKey)
+    return null
   }
-  // 使用 /user/{id} 接口获取当前用户信息
-  // 这里假设从 token 中解析出用户 ID，或者使用默认 ID
-  const userId = '1' // 实际项目中应该从 token 中解析
-  return api
-    .getUserInfo(userId)
-    .then(handleUserResponse)
-    .catch(() => {
-      // 如果请求失败，清除 token 并返回 null
-      window.localStorage.removeItem(localStorageKey)
-      return null
-    })
+
+  // 提前准备好本地缓存数据
+  const localUserStr = window.localStorage.getItem(token)
+  const localUser = localUserStr ? JSON.parse(localUserStr) : null
+  const userId = localUser?.id || '1'
+
+  try {
+    let response
+    try {
+      response = await api.getUserInfo(userId)
+    } catch (e) {
+      response = await api.getCurrentUser()
+    }
+
+    const userData = response?.data?.user || response?.data?.data || response?.data
+
+    if (!userData || !userData.username) {
+      throw new Error('获取用户信息失败')
+    }
+
+    const user: User = {
+      id: userData.id?.toString() || 'unknown',
+      username: userData.username,
+      token: token,
+    }
+
+    // 更新鲜活的缓存
+    window.localStorage.setItem(user.token, JSON.stringify(user))
+    return user
+  } catch (error) {
+    if (localUser && localUser.username) {
+      console.warn('API 拉取用户信息失败，使用本地缓存保底维持登录状态', error)
+      return localUser
+    }
+    console.error('刷新拉取用户信息失败，清理 Token：', error)
+    window.localStorage.removeItem(localStorageKey)
+    return null
+  }
 }
 
 // 为了兼容性，也导出 getCurrentUser 作为默认导出的属性
