@@ -8,14 +8,21 @@ const mockUsers = [
 
 // 登录接口
 const loginMock: MockMethod = {
-  url: '/api/login',
+  url: '/user/login',
   method: 'post',
   response: (options: any) => {
     const { username, password } = options.body
     const user = mockUsers.find((u) => u.username === username && u.password === password)
 
     if (user) {
-      return { code: 200, user }
+      return {
+        status: 0,
+        code: 200,
+        data: {
+          access_token: user.token,
+          user: user,
+        },
+      }
     } else {
       return { code: 401, message: '用户名或密码错误' }
     }
@@ -24,7 +31,7 @@ const loginMock: MockMethod = {
 
 // 注册接口
 const registerMock: MockMethod = {
-  url: '/api/register',
+  url: '/user/register',
   method: 'post',
   response: (options: any) => {
     const { username, password } = options.body
@@ -47,7 +54,7 @@ const registerMock: MockMethod = {
 
 // 获取当前用户信息接口
 const meMock: MockMethod = {
-  url: '/api/me',
+  url: '/user/me',
   method: 'get',
   response: (options: any) => {
     const authHeader = options.headers.authorization
@@ -68,7 +75,7 @@ const meMock: MockMethod = {
 
 // 检查用户名是否已存在接口
 const checkUsernameMock: MockMethod = {
-  url: '/api/check-username',
+  url: '/user/check-username',
   method: 'post',
   response: (options: any) => {
     const { username } = options.body
