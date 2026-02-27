@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useCallback } from 'react'
 import { Button, message, Space, Upload, Modal, Form } from 'antd'
 import { ExportOutlined, ReloadOutlined, UploadOutlined, DownloadOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
@@ -11,12 +11,19 @@ import type { CleanedRecord } from './services/data-cleaning'
 import { api } from '../../api/request'
 
 const DataAnalysis: React.FC = () => {
+  const [refreshKey, setRefreshKey] = useState(0)
   const [cleaned, setCleaned] = useState<CleanedRecord[]>([])
   const [isImportModalOpen, setIsImportModalOpen] = useState(false)
   const [importLoading, setImportLoading] = useState(false)
   const [exportLoading, setExportLoading] = useState(false)
   const [form] = Form.useForm()
   const navigate = useNavigate()
+
+  const handleRefresh = useCallback(() => {
+    setRefreshKey((prev) => prev + 1) // 改变 key，强制重新挂载下方的面板
+    setCleaned([]) // 清空当前页面的临时状态
+    message.success('数据已局部刷新')
+  }, [])
 
   // 导出数据到 DataDisplay 页面
   const handleExportData = () => {
@@ -40,7 +47,8 @@ const DataAnalysis: React.FC = () => {
       onSuccess?.(file)
       setIsImportModalOpen(false)
       // 刷新页面以加载新配置
-      window.location.reload()
+      // window.location.reload()
+      handleRefresh()
     } catch (error) {
       message.error('配置导入失败')
       onError?.(error as any, file)
@@ -100,7 +108,7 @@ const DataAnalysis: React.FC = () => {
         >
           <h2 className="pageTitle">数据分析</h2>
           <Space>
-            <Button icon={<ReloadOutlined />} onClick={() => window.location.reload()}>
+            <Button icon={<ReloadOutlined />} onClick={handleRefresh}>
               刷新数据
             </Button>
             <Button icon={<UploadOutlined />} onClick={() => setIsImportModalOpen(true)}>
@@ -126,14 +134,16 @@ const DataAnalysis: React.FC = () => {
         <p style={{ fontSize: '16px', lineHeight: '1.5', color: '#666', marginBottom: '24px' }}>
           数据分析页面，用于深入分析SDK的使用数据和性能指标。
         </p>
-        <div style={{ marginBottom: '24px' }}>
-          <DataCleaningPanel onCleanedChange={setCleaned} />
-        </div>
-        <div style={{ marginBottom: '24px' }}>
-          <DataAggregationPanel cleaned={cleaned} />
-        </div>
-        <div>
-          <MetadataPanel />
+        <div key={refreshKey}>
+          <div style={{ marginBottom: '24px' }}>
+            <DataCleaningPanel onCleanedChange={setCleaned} />
+          </div>
+          <div style={{ marginBottom: '24px' }}>
+            <DataAggregationPanel cleaned={cleaned} />
+          </div>
+          <div>
+            <MetadataPanel />
+          </div>
         </div>
       </div>
 
