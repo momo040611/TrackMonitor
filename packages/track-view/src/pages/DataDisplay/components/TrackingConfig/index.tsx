@@ -314,11 +314,11 @@ const TrackingConfig: React.FC = () => {
           display: 'flex',
           flexDirection: 'column',
           gap: '16px',
-          height: `calc(100vh - 240px)`,
+          minHeight: `calc(100vh - 240px)`,
         }}
       >
         {/* 上半部分：埋点配置列表 */}
-        <Card style={{ flex: 0.6, overflow: 'hidden', background: '#fff' }}>
+        <Card style={{ flex: 0.6, overflow: 'hidden', background: '#fff', minHeight: '300px' }}>
           <div style={{ height: 'calc(100% - 56px)', overflow: 'auto' }}>
             <Table
               loading={isLoading}
@@ -332,7 +332,16 @@ const TrackingConfig: React.FC = () => {
         </Card>
 
         {/* 下半部分：可视化埋点编辑器 */}
-        <Card style={{ flex: 0.4, overflow: 'hidden', background: '#fff' }}>
+        <Card
+          style={{
+            flex: 0.4,
+            display: 'flex',
+            flexDirection: 'column',
+            background: '#fff',
+            minHeight: '450px',
+          }}
+          styles={{ body: { flex: 1, overflow: 'hidden', padding: '24px' } }}
+        >
           <Row gutter={16} style={{ height: '100%' }}>
             {/* 页面预览区 */}
             <Col
@@ -356,6 +365,18 @@ const TrackingConfig: React.FC = () => {
                 >
                   加载
                 </Button>
+
+                <Button
+                  size="small"
+                  style={{ marginLeft: '8px' }}
+                  onClick={() => {
+                    if (iframeRef.current) {
+                      iframeRef.current.contentWindow?.location.reload()
+                    }
+                  }}
+                >
+                  刷新
+                </Button>
               </div>
               <div
                 style={{
@@ -374,8 +395,18 @@ const TrackingConfig: React.FC = () => {
               </div>
             </Col>
 
-            {/* 配置表单区 (使用 editForm，完全与新增弹窗隔离) */}
-            <Col xs={24} md={12} style={{ height: '100%', overflow: 'auto' }}>
+            {/* 配置表单区 */}
+            <Col
+              xs={24}
+              md={12}
+              style={{
+                height: '100%',
+                overflowY: 'auto',
+                paddingRight: '16px',
+                paddingBottom: '32px',
+              }}
+            >
+              {' '}
               <div style={{ marginBottom: '16px' }}>
                 <span style={{ marginRight: '8px', fontWeight: 500 }}>埋点类型：</span>
                 <Radio.Group
@@ -385,6 +416,7 @@ const TrackingConfig: React.FC = () => {
                 >
                   <Radio.Button value="click">点击</Radio.Button>
                   <Radio.Button value="exposure">曝光</Radio.Button>
+                  <Radio.Button value="stay">停留</Radio.Button>
                 </Radio.Group>
               </div>
               <Form form={editForm} layout="vertical">
@@ -395,18 +427,54 @@ const TrackingConfig: React.FC = () => {
                 >
                   <Input placeholder="请输入埋点名称" />
                 </Item>
+
+                <Item label="所属事件" name="event">
+                  <Select style={{ width: '100%' }}>
+                    <Option value="event1">事件1</Option>
+                    <Option value="event2">事件2</Option>
+                    <Option value="event3">事件3</Option>
+                  </Select>
+                </Item>
+
+                <Item label="上报频率" name="frequency">
+                  <Select style={{ width: '100%' }}>
+                    <Option value="realtime">实时</Option>
+                    <Option value="batch">批量</Option>
+                  </Select>
+                </Item>
+
+                <Item label="自定义属性" name="properties">
+                  <TextArea rows={3} placeholder="请输入自定义属性" />
+                </Item>
+
                 <Item label="触发条件" name="trigger">
                   <Select style={{ width: '100%' }}>
                     <Option value="click">点击</Option>
                     <Option value="exposure">曝光</Option>
+                    <Option value="stay">停留时长≥X 秒</Option>
                   </Select>
                 </Item>
+
+                {selectedTrackingType === 'stay' && (
+                  <Item label="停留时长" name="stayTime">
+                    <Input
+                      type="number"
+                      placeholder="请输入停留时长（秒）"
+                      style={{ width: '100%' }}
+                    />
+                  </Item>
+                )}
+
                 <Item label="备注" name="remark">
                   <TextArea rows={3} placeholder="请输入备注信息" />
                 </Item>
+
                 <Space size="middle" style={{ marginTop: '16px' }}>
-                  <Button>保存修改</Button>
+                  <Button>保存草稿</Button>
                   <Button type="primary">预览效果</Button>
+                  <Button type="primary" danger>
+                    提交发布
+                  </Button>
                 </Space>
               </Form>
             </Col>
