@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useMemo } from 'react'
 import {
   Card,
   Table,
@@ -16,13 +16,12 @@ import {
 import {
   BugOutlined,
   CheckCircleOutlined,
-  WarningOutlined,
   ReloadOutlined,
   RobotOutlined,
   FileTextOutlined,
   ExportOutlined,
 } from '@ant-design/icons'
-import { AiService } from '../../services/useAiAssistant'
+import { useAnomalyDiagnosis, type DiagnosisItem } from './useAnomalyDiagnosis'
 import './AnomalyDiagnosis.less'
 
 const { Title, Paragraph, Text } = Typography
@@ -31,154 +30,62 @@ interface Props {
   onDispatch?: (content: string) => void
 }
 
-interface DiagnosisItem {
-  id: string
-  level: 'error' | 'warning' | 'info'
-  title: string
-  description: string
-  suggestion: string
-  affected_scope?: string
-  score_impact: number
-}
-
 export const AnomalyDiagnosis: React.FC<Props> = ({ onDispatch }) => {
-  const [analyzing, setAnalyzing] = useState(false)
-  const [healthScore, setHealthScore] = useState(100)
-  const [issues, setIssues] = useState<DiagnosisItem[]>([])
-  const [drawerVisible, setDrawerVisible] = useState(false)
-  const [currentIssue, setCurrentIssue] = useState<DiagnosisItem | null>(null)
-  const [isDiagnosing, setIsDiagnosing] = useState(false)
-  const isDiagnosingRef = useRef(false)
+  const {
+    analyzing,
+    healthScore,
+    issues,
+    drawerVisible,
+    currentIssue,
+    startDiagnosis,
+    showDetails,
+    closeDrawer,
+  } = useAnomalyDiagnosis()
 
-  //处理跳转逻辑
+  //缓存 Table 列配置
+  const columns = useMemo(
+    () => [
+      {
+        title: '异常信息',
+        key: 'info',
+        render: (_: any, item: DiagnosisItem) => (
+          <div>
+            <div className="issue-title">
+              <Tag
+                color={
+                  item.level === 'error' ? 'red' : item.level === 'warning' ? 'orange' : 'blue'
+                }
+              >
+                {item.level.toUpperCase()}
+              </Tag>
+              <Text strong>{item.title}</Text>
+            </div>
+            <Text type="secondary" ellipsis>
+              {item.description}
+            </Text>
+          </div>
+        ),
+      },
+      {
+        title: '操作',
+        key: 'action',
+        render: (_: any, item: DiagnosisItem) => (
+          <Button type="link" size="small" onClick={() => showDetails(item)}>
+            查看详情
+          </Button>
+        ),
+      },
+    ],
+    [showDetails]
+  )
+
+  // 业务派发逻辑
   const handleToDispatch = () => {
     if (!currentIssue || !onDispatch) return
-
-    // 自动组装成一段清晰的任务描述
-    const taskContext = `
-【异常转工单】${currentIssue.title}
--------------------------
-[级别] ${currentIssue.level.toUpperCase()}
-[影响范围] ${currentIssue.affected_scope || '未知'}
-[异常描述] ${currentIssue.description}
-[AI 建议] ${currentIssue.suggestion}
-      `.trim()
-
+    const taskContext =
+      `【异常转工单】${currentIssue.title}\n-------------------------\n[级别] ${currentIssue.level.toUpperCase()}\n[影响范围] ${currentIssue.affected_scope || '未知'}\n[异常描述] ${currentIssue.description}\n[AI 建议] ${currentIssue.suggestion}`.trim()
     onDispatch(taskContext)
     message.loading('正在同步上下文至分派台...', 0.5)
-  }
-
-  const startDiagnosis = async () => {
-    // 如果正在诊断中，不重复触发
-    if (isDiagnosingRef.current) return
-
-    try {
-      isDiagnosingRef.current = true
-      setIsDiagnosing(true)
-      setAnalyzing(true)
-      setIssues([])
-
-      // 调用后端接口获取异常诊断数据
-      const diagnosisData = await AiService.getAiAnalysisData('anomaly-diagnosis')
-
-      // 处理返回的数据
-      if (diagnosisData && diagnosisData.issues) {
-        const issues = diagnosisData.issues
-        setIssues(issues)
-        const totalDeduction = issues.reduce(
-          (acc: number, item: DiagnosisItem) => acc + item.score_impact,
-          0
-        )
-        setHealthScore(Math.max(0, 100 - totalDeduction))
-        message.success('诊断完成')
-      } else {
-        // 如果没有数据，使用默认数据
-        const defaultIssues: DiagnosisItem[] = [
-          {
-            id: '1',
-            level: 'error',
-            title: 'generate_click 事件参数缺失',
-            description: '检测到 5% 的生成点击事件缺失 model_type 参数。',
-            suggestion: '请检查 TrackSDK 的调用代码，确保 payload 中包含 model_type 字段。',
-            affected_scope: 'A/B 测试实验组 B',
-            score_impact: 15,
-          },
-          {
-            id: '2',
-            level: 'warning',
-            title: 'work_show 曝光未去重',
-            description: '同一作品 ID 在短时间内触发了多次曝光。',
-            suggestion: '建议引入防抖 (Debounce) 机制，或使用 SDK 的 once: true 选项。',
-            score_impact: 5,
-          },
-          {
-            id: '3',
-            level: 'info',
-            title: 'Prompt 长度分布异常',
-            description: '检测到超长 Prompt (Length > 1000) 占比上升。',
-            suggestion: '业务提示，暂无需代码修复。',
-            score_impact: 0,
-          },
-        ]
-        setIssues(defaultIssues)
-        const totalDeduction = defaultIssues.reduce(
-          (acc: number, item: DiagnosisItem) => acc + item.score_impact,
-          0
-        )
-        setHealthScore(Math.max(0, 100 - totalDeduction))
-        message.success('诊断完成 (使用默认数据)')
-      }
-    } catch (error) {
-      // 静默处理错误，直接使用默认数据
-
-      // 出错时使用默认数据
-      const defaultIssues: DiagnosisItem[] = [
-        {
-          id: '1',
-          level: 'error',
-          title: 'generate_click 事件参数缺失',
-          description: '检测到 5% 的生成点击事件缺失 model_type 参数。',
-          suggestion: '请检查 TrackSDK 的调用代码，确保 payload 中包含 model_type 字段。',
-          affected_scope: 'A/B 测试实验组 B',
-          score_impact: 15,
-        },
-        {
-          id: '2',
-          level: 'warning',
-          title: 'work_show 曝光未去重',
-          description: '同一作品 ID 在短时间内触发了多次曝光。',
-          suggestion: '建议引入防抖 (Debounce) 机制，或使用 SDK 的 once: true 选项。',
-          score_impact: 5,
-        },
-        {
-          id: '3',
-          level: 'info',
-          title: 'Prompt 长度分布异常',
-          description: '检测到超长 Prompt (Length > 1000) 占比上升。',
-          suggestion: '业务提示，暂无需代码修复。',
-          score_impact: 0,
-        },
-      ]
-      setIssues(defaultIssues)
-      const totalDeduction = defaultIssues.reduce(
-        (acc: number, item: DiagnosisItem) => acc + item.score_impact,
-        0
-      )
-      setHealthScore(Math.max(0, 100 - totalDeduction))
-    } finally {
-      setAnalyzing(false)
-      setIsDiagnosing(false)
-      isDiagnosingRef.current = false
-    }
-  }
-
-  useEffect(() => {
-    startDiagnosis()
-  }, [])
-
-  const showDetails = (item: DiagnosisItem) => {
-    setCurrentIssue(item)
-    setDrawerVisible(true)
   }
 
   return (
@@ -251,104 +158,75 @@ export const AnomalyDiagnosis: React.FC<Props> = ({ onDispatch }) => {
           dataSource={issues}
           pagination={{ pageSize: 5, size: 'small', hideOnSinglePage: true }}
           rowKey="id"
-          columns={[
-            {
-              title: '异常信息',
-              key: 'info',
-              render: (_, item) => (
-                <div>
-                  <div className="issue-title">
-                    <Tag
-                      color={
-                        item.level === 'error'
-                          ? 'red'
-                          : item.level === 'warning'
-                            ? 'orange'
-                            : 'blue'
-                      }
-                    >
-                      {item.level.toUpperCase()}
-                    </Tag>
-                    <Text strong>{item.title}</Text>
-                  </div>
-                  <Text type="secondary" ellipsis>
-                    {item.description}
-                  </Text>
-                </div>
-              ),
-            },
-            {
-              title: '操作',
-              key: 'action',
-              render: (_, item) => (
-                <Button type="link" size="small" onClick={() => showDetails(item)}>
-                  查看详情
-                </Button>
-              ),
-            },
-          ]}
+          columns={columns}
         />
       </Card>
 
-      <Drawer
-        title={
-          <span>
-            <FileTextOutlined /> 异常详情
-          </span>
-        }
-        placement="right"
-        size={480}
-        onClose={() => setDrawerVisible(false)}
-        open={drawerVisible}
-      >
-        {currentIssue && (
-          // 使用 className 替代内联样式
-          <div className="diagnosis-drawer-content">
-            <div>
-              <Title level={5}>异常描述</Title>
-              <Paragraph>{currentIssue.description}</Paragraph>
-            </div>
-
-            {currentIssue.affected_scope && (
-              <div>
-                <Title level={5}>影响范围</Title>
-                <Tag color="purple" className="scope-tag">
-                  {currentIssue.affected_scope}
-                </Tag>
-              </div>
-            )}
-
-            <Card
-              type="inner"
-              title={
-                <Space>
-                  <RobotOutlined /> AI 修复建议
-                </Space>
-              }
-              className="suggestion-card"
-              actions={[
-                <Button
-                  key="dispatch"
-                  type="primary"
-                  size="small"
-                  ghost
-                  icon={<ExportOutlined />}
-                  onClick={handleToDispatch}
-                  disabled={!onDispatch}
-                >
-                  转人工分派
-                </Button>,
-              ]}
-            >
-              <Paragraph style={{ marginBottom: 0 }}>{currentIssue.suggestion}</Paragraph>
-            </Card>
-
-            <div className="meta-info">
-              异常 ID: {currentIssue.id} | 扣分权重: {currentIssue.score_impact}
-            </div>
-          </div>
-        )}
-      </Drawer>
+      <IssueDetailDrawer
+        visible={drawerVisible}
+        issue={currentIssue}
+        onClose={closeDrawer}
+        onDispatch={handleToDispatch}
+        canDispatch={!!onDispatch}
+      />
     </div>
   )
 }
+
+const IssueDetailDrawer = ({ visible, issue, onClose, onDispatch, canDispatch }: any) => (
+  <Drawer
+    title={
+      <span>
+        <FileTextOutlined /> 异常详情
+      </span>
+    }
+    placement="right"
+    size={480}
+    onClose={onClose}
+    open={visible}
+  >
+    {issue && (
+      <div className="diagnosis-drawer-content">
+        <div>
+          <Title level={5}>异常描述</Title>
+          <Paragraph>{issue.description}</Paragraph>
+        </div>
+        {issue.affected_scope && (
+          <div>
+            <Title level={5}>影响范围</Title>
+            <Tag color="purple" className="scope-tag">
+              {issue.affected_scope}
+            </Tag>
+          </div>
+        )}
+        <Card
+          type="inner"
+          title={
+            <Space>
+              <RobotOutlined /> AI 修复建议
+            </Space>
+          }
+          className="suggestion-card"
+          actions={[
+            <Button
+              key="dispatch"
+              type="primary"
+              size="small"
+              ghost
+              icon={<ExportOutlined />}
+              onClick={onDispatch}
+              disabled={!canDispatch}
+            >
+              转人工分派
+            </Button>,
+          ]}
+        >
+          <Paragraph style={{ marginBottom: 0 }}>{issue.suggestion}</Paragraph>
+        </Card>
+        <div className="meta-info">
+          异常 ID: {issue.id} | 扣分权重: {issue.score_impact}
+        </div>
+      </div>
+    )}
+  </Drawer>
+)
