@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { useAuth } from '../context/auth-context'
-import { StyledInput, StyledButton } from './index'
+import { useAuth } from '../context/useAuth'
+import { StyledInput, StyledButton } from './styled'
 export const LoginScreen = ({ onError }: { onError: (error: Error) => void }) => {
   const { login } = useAuth()
   const [isLoading, setIsLoading] = useState(false)
@@ -12,11 +12,8 @@ export const LoginScreen = ({ onError }: { onError: (error: Error) => void }) =>
     console.log('Handle submit called with username:', username, 'password:', password)
     try {
       setIsLoading(true)
-      console.log('About to call login')
       await login({ username, password })
-      console.log('Login completed successfully')
     } catch (e) {
-      console.log('Login error:', e)
       onError(e as Error)
     } finally {
       setIsLoading(false)

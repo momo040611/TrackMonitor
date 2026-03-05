@@ -87,8 +87,11 @@ const PerformanceAnalysis: React.FC = () => {
           type: 'bar',
           data: performanceData.apiRequests.slice(0, 10).map((item) => item.duration),
           itemStyle: {
-            color: (params: any) =>
-              params.value < 200 ? '#52c41a' : params.value < 500 ? '#faad14' : '#f5222d',
+            color: (params: { value: unknown }) => {
+              const value = params.value as number | undefined
+              const duration = value ?? 0
+              return duration < 200 ? '#52c41a' : duration < 500 ? '#faad14' : '#f5222d'
+            },
           },
         },
       ],
@@ -151,8 +154,11 @@ const PerformanceAnalysis: React.FC = () => {
             .slice(0, 50)
             .map((task, index) => [index % 24, task.duration]),
           itemStyle: {
-            color: (params: any) =>
-              params.value[1] < 50 ? '#52c41a' : params.value[1] < 250 ? '#faad14' : '#f5222d',
+            color: (params: { value: unknown }) => {
+              const value = params.value as [number, number] | undefined
+              const duration = value?.[1] ?? 0
+              return duration < 50 ? '#52c41a' : duration < 250 ? '#faad14' : '#f5222d'
+            },
           },
         },
       ],
@@ -270,7 +276,17 @@ const PerformanceAnalysis: React.FC = () => {
   )
 }
 
-const MetricCard = ({ title, value, suffix, color, bg, desc }: any) => (
+// MetricCard 组件属性接口
+interface MetricCardProps {
+  title: string
+  value: number
+  suffix?: string
+  color: string
+  bg: string
+  desc: string
+}
+
+const MetricCard = ({ title, value, suffix, color, bg, desc }: MetricCardProps) => (
   <Card variant="outlined" style={{ background: bg }}>
     <Statistic
       title={title}

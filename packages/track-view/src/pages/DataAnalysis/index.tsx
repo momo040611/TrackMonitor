@@ -3,12 +3,10 @@ import { Button, message, Space, Upload, Modal, Form } from 'antd'
 import { ExportOutlined, ReloadOutlined, UploadOutlined, DownloadOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import type { UploadProps } from 'antd'
-type RcFile = File & { uid: string }
 import DataCleaningPanel from './components/DataCleaningPanel'
 import DataAggregationPanel from './components/DataAggregationPanel'
 import MetadataPanel from './components/MetadataPanel'
 import type { CleanedRecord } from './services/data-cleaning'
-import { api } from '../../api/request'
 
 const DataAnalysis: React.FC = () => {
   const [refreshKey, setRefreshKey] = useState(0)
@@ -49,9 +47,9 @@ const DataAnalysis: React.FC = () => {
       // 刷新页面以加载新配置
       // window.location.reload()
       handleRefresh()
-    } catch (error) {
+    } catch {
       message.error('配置导入失败')
-      onError?.(error as any, file)
+      onError?.(new Error('导入失败'), file)
     } finally {
       setImportLoading(false)
     }
@@ -88,7 +86,7 @@ const DataAnalysis: React.FC = () => {
       link.download = 'analysis-config.json'
       link.click()
       URL.revokeObjectURL(url)
-    } catch (error) {
+    } catch {
       message.error('配置导出失败')
     } finally {
       setExportLoading(false)

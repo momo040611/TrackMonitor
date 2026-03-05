@@ -5,7 +5,7 @@ import type {
   ConfigItem,
 } from '../../pages/DataAnalysis/services/metadata'
 
-export interface MetadataState extends MetadataStateSnapshot {}
+export type MetadataState = MetadataStateSnapshot
 
 export type MetadataAction =
   | { type: 'setAll'; payload: MetadataStateSnapshot }

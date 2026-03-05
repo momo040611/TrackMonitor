@@ -1,5 +1,9 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { api } from '../../../../api/request'
+import { message } from 'antd'
+
+// 判断是否处于 Mock 模式
+const isMockMode = import.meta.env.VITE_USE_MOCK === 'true'
 
 export interface OverviewData {
   totalPV: number
@@ -44,26 +48,23 @@ export const useDashboardData = () => {
     try {
       const apiParams = { projectId: 'default', timeRange: '24h' }
 
-      // 获取错误数据 (保留了原有的防御性代码逻辑)
-      let errorCount = 125
+      // 获取错误数据
+      let errorCount = 0
       try {
         const errorResult = await api.getErrorData(apiParams)
-        if (errorResult && typeof errorResult === 'object') {
-          if ('data' in errorResult) {
-            if (Array.isArray(errorResult.data)) errorCount = errorResult.data.length
-            else if (typeof errorResult.data === 'number') errorCount = errorResult.data
-          } else if (Array.isArray(errorResult)) {
-            errorCount = (errorResult as Array<any>).length
-          } else if ('status' in errorResult && (errorResult as any).status === 0) {
-            if ('data' in errorResult && Array.isArray((errorResult as any).data)) {
-              errorCount = (errorResult as any).data.length
-            }
-          }
+        if (errorResult && typeof errorResult === 'object' && 'data' in errorResult) {
+          const data = (errorResult as { data?: unknown }).data
+          if (Array.isArray(data)) errorCount = data.length
+          else if (typeof data === 'number') errorCount = data
         }
-      } catch (err) {}
+      } catch (err) {
+        // 只有在 Mock 模式下才使用默认值，否则抛出错误
+        if (!isMockMode) throw err
+        errorCount = 0
+      }
 
       // 获取性能数据
-      let successRate = 95
+      let successRate = 0
       try {
         const performanceResult = await api.getPerformanceData(apiParams)
         if (
@@ -71,32 +72,34 @@ export const useDashboardData = () => {
           typeof performanceResult === 'object' &&
           'data' in performanceResult
         ) {
-          const perfData = performanceResult.data
-          if (
-            perfData &&
-            typeof perfData === 'object' &&
-            'successCount' in perfData &&
-            'totalCount' in perfData
-          ) {
-            const { successCount, totalCount } = perfData as any
+          const perfData = (
+            performanceResult as { data?: { successCount?: number; totalCount?: number } }
+          ).data
+          if (perfData && typeof perfData === 'object') {
+            const { successCount = 0, totalCount = 1 } = perfData
             if (totalCount > 0) successRate = Math.round((successCount / totalCount) * 100)
           }
         }
-      } catch (err) {}
+      } catch (err) {
+        // 只有在 Mock 模式下才使用默认值，否则抛出错误
+        if (!isMockMode) throw err
+        successRate = 0
+      }
 
       // 获取所有事件数据
-      let todayEvents = 876
+      let todayEvents = 0
       try {
         const allEventsResult = await api.getAllEvents(apiParams)
-        if (allEventsResult && typeof allEventsResult === 'object') {
-          if ('data' in allEventsResult) {
-            if (Array.isArray(allEventsResult.data)) todayEvents = allEventsResult.data.length
-            else if (typeof allEventsResult.data === 'number') todayEvents = allEventsResult.data
-          } else if (Array.isArray(allEventsResult)) {
-            todayEvents = (allEventsResult as Array<any>).length
-          }
+        if (allEventsResult && typeof allEventsResult === 'object' && 'data' in allEventsResult) {
+          const data = (allEventsResult as { data?: unknown }).data
+          if (Array.isArray(data)) todayEvents = data.length
+          else if (typeof data === 'number') todayEvents = data
         }
-      } catch (err) {}
+      } catch (err) {
+        // 只有在 Mock 模式下才使用默认值，否则抛出错误
+        if (!isMockMode) throw err
+        todayEvents = 0
+      }
 
       setOverviewData({
         totalPV: errorCount,
@@ -121,8 +124,13 @@ export const useDashboardData = () => {
         { type: '其他', value: 20, percentage: 20, color: '#faad14' },
       ])
     } catch (error) {
-      // 容错默认数据
-      setOverviewData({ totalPV: 125, totalUV: 95, todayTracking: 876, yoyGrowth: 8, momGrowth: 5 })
+      console.error('获取大盘数据失败:', error)
+      message.error('获取数据失败，请稍后重试')
+
+      // 只有在 Mock 模式下才使用兜底数据
+      if (isMockMode) {
+        setOverviewData({ totalPV: 0, totalUV: 0, todayTracking: 0, yoyGrowth: 0, momGrowth: 0 })
+      }
     } finally {
       setIsLoading(false)
     }
@@ -135,7 +143,12 @@ export const useDashboardData = () => {
         await api.getAllEvents({ projectId: 'default', timeRange: '24h' })
         setRealtimeData(Math.floor(Math.random() * 50))
         setRealtimeChartData(Array.from({ length: 10 }, () => Math.floor(Math.random() * 20)))
-      } catch (error) {}
+      } catch (error) {
+        // 只有在 Mock 模式下才静默处理错误
+        if (!isMockMode) {
+          console.error('实时数据获取失败:', error)
+        }
+      }
     }
 
     updateRealtimeData()

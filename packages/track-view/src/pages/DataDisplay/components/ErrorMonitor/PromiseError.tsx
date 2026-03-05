@@ -1,5 +1,5 @@
 import React from 'react'
-import { Table, Tag, Space, Typography, Collapse, Badge } from 'antd'
+import { Table, Typography, Collapse, Badge } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 
 interface ErrorData {

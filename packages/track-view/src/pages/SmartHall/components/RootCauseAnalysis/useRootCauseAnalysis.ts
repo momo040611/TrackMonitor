@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react'
 import { message } from 'antd'
-
+import { useSmartHall } from '../../hooks/useSmartHall'
 export interface RootCauseResult {
   dimension: string
   value: string
@@ -17,7 +17,8 @@ export interface DetailLog {
   stack?: string
 }
 
-export const useRootCauseAnalysis = (onAnalyzeLog?: (log: string) => void) => {
+export const useRootCauseAnalysis = () => {
+  const { goToLogParser } = useSmartHall()
   const [loading, setLoading] = useState(false)
   const [results, setResults] = useState<RootCauseResult[]>([])
   const [drawerVisible, setDrawerVisible] = useState(false)
@@ -94,15 +95,14 @@ export const useRootCauseAnalysis = (onAnalyzeLog?: (log: string) => void) => {
     setDrawerVisible(true)
   }, [])
 
-  // 深度分析交互
+  // 深度分析交互 - 使用 Context
   const handleDeepAnalysis = useCallback(
     (log: DetailLog) => {
-      if (!onAnalyzeLog) return
       const rawLogString = `[${log.time}] [${log.level}] [Thread-main] ${log.message}\n${log.stack || ''}`
-      onAnalyzeLog(rawLogString)
+      goToLogParser(rawLogString)
       message.loading('正在提取日志上下文...', 0.5)
     },
-    [onAnalyzeLog]
+    [goToLogParser]
   )
 
   return {

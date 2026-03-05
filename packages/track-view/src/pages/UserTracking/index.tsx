@@ -117,7 +117,7 @@ const UserTracking: React.FC = () => {
                 <Statistic
                   title="追踪状态"
                   value={isTracking ? '活跃' : '非活跃'}
-                  valueStyle={{ color: isTracking ? '#52c41a' : '#faad14' }}
+                  styles={{ content: { color: isTracking ? '#52c41a' : '#faad14' } }}
                 />
               </Col>
             </Row>

@@ -1,3 +1,9 @@
+.log-parser-wrapper {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
 .log-parser-container {
     display: flex;
     gap: 24px;
@@ -13,6 +19,8 @@
         .instruction-text {
             display: block;
             margin-bottom: 12px;
+            color: #666;
+            font-size: 14px;
         }
 
         .log-input {
@@ -50,6 +58,13 @@
             }
         }
 
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+        }
+
         .status-tag {
             margin-left: auto;
         }
@@ -76,13 +91,20 @@
 
         .result-content {
             margin: 0;
-            color: #a5d6ff; 
+            color: #a5d6ff;
             font-family: "Fira Code", monospace;
             font-size: 13px;
             line-height: 1.5;
             white-space: pre-wrap;
             height: 100%;
             overflow: auto;
+        }
+
+        .dispatch-action-area {
+            margin-top: 16px;
+            padding-top: 12px;
+            border-top: 1px solid #f0f0f0;
+            text-align: right;
         }
 
         .empty-state {

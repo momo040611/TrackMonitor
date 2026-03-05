@@ -1,6 +1,7 @@
 // 在真实环境中，如果使用firebase这种第三方auth服务的话，本文件不需要开发者开发
 
 import type { User } from './types'
+import type { ApiResponse } from './types'
 import { api } from './api/request'
 
 const localStorageKey = '__auth_provider_token__'
@@ -13,31 +14,58 @@ export const getUser = (): User | null => {
     try {
       const userData = JSON.parse(window.localStorage.getItem(token) || '{}')
       if (userData && userData.id && userData.username && userData.token) {
-        return userData
+        return userData as User
       }
-    } catch (error) {}
+    } catch {
+      // 解析失败返回 null
+    }
   }
   return null
 }
 
-export const handleUserResponse = (response: any) => {
+// API 响应数据结构
+interface AuthResponse {
+  data?: {
+    access_token?: string
+    token?: string
+    user?: User
+  }
+  access_token?: string
+  token?: string
+  user?: User
+  message?: string
+}
+
+// 用户数据接口
+interface UserData {
+  id?: string | number
+  username?: string
+  [key: string]: unknown
+}
+
+export const handleUserResponse = (response: ApiResponse<AuthResponse> | AuthResponse | null) => {
   if (!response) {
     throw new Error('未收到服务器响应，登录失败')
   }
+
+  const authResponse = response as AuthResponse
   const token =
-    response?.data?.access_token ||
-    response?.access_token ||
-    response?.data?.token ||
-    response?.token
-  const userData = response?.data?.user || response?.user || response?.data || response
+    authResponse.data?.access_token ||
+    authResponse.access_token ||
+    authResponse.data?.token ||
+    authResponse.token
+  const userData = (authResponse.data?.user ||
+    authResponse.user ||
+    authResponse.data ||
+    authResponse) as UserData | undefined
 
   if (!token) {
-    throw new Error(response?.message || '登录失败，未获取到访问令牌')
+    throw new Error(authResponse.message || '登录失败，未获取到访问令牌')
   }
 
   const user: User = {
-    id: userData?.id?.toString() || 'unknown',
-    username: userData?.username || 'user',
+    id: String(userData?.id || 'unknown'),
+    username: String(userData?.username || 'user'),
     token: token,
   }
 
@@ -65,22 +93,23 @@ export const register = (data: {
 }): Promise<User | null> => {
   return api
     .register(data)
-    .then((response: any) => {
+    .then((response: ApiResponse<AuthResponse> | AuthResponse): Promise<User | null> => {
+      const authResponse = response as AuthResponse
       const token =
-        response?.data?.access_token ||
-        response?.access_token ||
-        response?.data?.token ||
-        response?.token
+        authResponse.data?.access_token ||
+        authResponse.access_token ||
+        authResponse.data?.token ||
+        authResponse.token
 
       if (token) {
         // 如果给了 Token，直接走正常解析逻辑
-        return handleUserResponse(response)
+        return Promise.resolve(handleUserResponse(response))
       } else {
         // 没 Token，拿账号密码自动调一次登录接口
         return login({ username: data.username, password: data.password })
       }
     })
-    .catch((error) => {
+    .catch((error: { response?: { data?: { message?: string } }; message?: string }) => {
       throw new Error(error?.response?.data?.message || error?.message || '注册失败，请稍后重试')
     })
 }
@@ -116,20 +145,20 @@ export const getCurrentUser = async (): Promise<User | null> => {
 
   // 提前准备好本地缓存数据
   const localUserStr = window.localStorage.getItem(token)
-  const localUser = localUserStr ? JSON.parse(localUserStr) : null
+  const localUser: User | null = localUserStr ? JSON.parse(localUserStr) : null
   const userId = localUser?.id || '1'
 
   try {
     let response
     try {
       response = await api.getUserInfo(userId)
-    } catch (e) {
+    } catch {
       response = await api.getCurrentUser()
     }
 
     const userData = response?.data?.user || response?.data?.data || response?.data
 
-    if (!userData || !userData.username) {
+    if (!userData || !('username' in userData) || !userData.username) {
       throw new Error('获取用户信息失败')
     }
 
@@ -142,12 +171,11 @@ export const getCurrentUser = async (): Promise<User | null> => {
     // 更新鲜活的缓存
     window.localStorage.setItem(user.token, JSON.stringify(user))
     return user
-  } catch (error) {
+  } catch {
     if (localUser && localUser.username) {
-      console.warn('API 拉取用户信息失败，使用本地缓存保底维持登录状态', error)
+      // API 拉取失败，使用本地缓存保底
       return localUser
     }
-    console.error('刷新拉取用户信息失败，清理 Token：', error)
     window.localStorage.removeItem(localStorageKey)
     return null
   }

@@ -1,5 +1,20 @@
 import type { MockMethod } from 'vite-plugin-mock'
 
+// 定义 Mock 请求选项类型
+interface MockOptions {
+  body: Record<string, unknown>
+  headers: Record<string, string>
+  query: Record<string, string>
+}
+
+// 只在 Node.js 环境中打印当前工作目录
+if (typeof process !== 'undefined') {
+  // eslint-disable-next-line no-console
+  console.log('Mock module loaded')
+  // eslint-disable-next-line no-console
+  console.log('Current working directory:', process.cwd())
+}
+
 // 模拟用户数据
 const mockUsers = [
   { id: '1', username: 'admin', password: '123456', token: 'mock-token-admin' },
@@ -8,21 +23,14 @@ const mockUsers = [
 
 // 登录接口
 const loginMock: MockMethod = {
-  url: '/user/login',
+  url: '/api/login',
   method: 'post',
-  response: (options: any) => {
-    const { username, password } = options.body
+  response: (options: MockOptions) => {
+    const { username, password } = options.body as { username: string; password: string }
     const user = mockUsers.find((u) => u.username === username && u.password === password)
 
     if (user) {
-      return {
-        status: 0,
-        code: 200,
-        data: {
-          access_token: user.token,
-          user: user,
-        },
-      }
+      return { code: 200, user }
     } else {
       return { code: 401, message: '用户名或密码错误' }
     }
@@ -31,10 +39,10 @@ const loginMock: MockMethod = {
 
 // 注册接口
 const registerMock: MockMethod = {
-  url: '/user/register',
+  url: '/api/register',
   method: 'post',
-  response: (options: any) => {
-    const { username, password } = options.body
+  response: (options: MockOptions) => {
+    const { username, password } = options.body as { username: string; password: string }
     const existingUser = mockUsers.find((u) => u.username === username)
 
     if (existingUser) {
@@ -54,38 +62,31 @@ const registerMock: MockMethod = {
 
 // 获取当前用户信息接口
 const meMock: MockMethod = {
-  url: '/auth/profile',
-  response: (options: any) => {
-    // 尝试获取请求头里的 token（适配 Bearer 格式）
-    const authHeader = options.headers.authorization || options.headers.Authorization
+  url: '/api/me',
+  method: 'get',
+  response: (options: MockOptions) => {
+    const authHeader = options.headers.authorization
     if (!authHeader) {
-      return { code: 401, message: '无Token，请重新登录' }
+      return { code: 401, message: '请重新登录' }
     }
 
-    const token = authHeader.replace('Bearer ', '')
+    const token = authHeader.split(' ')[1]
     const user = mockUsers.find((u) => u.token === token)
 
     if (user) {
-      return {
-        status: 0,
-        code: 200,
-        data: {
-          access_token: user.token,
-          user: user,
-        },
-      }
+      return { code: 200, user }
     } else {
-      return { code: 401, message: 'Token失效，请重新登录' }
+      return { code: 401, message: '请重新登录' }
     }
   },
 }
 
 // 检查用户名是否已存在接口
 const checkUsernameMock: MockMethod = {
-  url: '/user/check-username',
+  url: '/api/check-username',
   method: 'post',
-  response: (options: any) => {
-    const { username } = options.body
+  response: (options: MockOptions) => {
+    const { username } = options.body as { username: string }
     const existingUser = mockUsers.find((u) => u.username === username)
 
     if (existingUser) {
@@ -303,8 +304,8 @@ const metadataMock: MockMethod = {
 const aiGenerateCodeMock: MockMethod = {
   url: '/api/ai/generate-code',
   method: 'post',
-  response: (req: any) => {
-    const { requirement } = req.body
+  response: (req: MockOptions) => {
+    const { requirement } = req.body as { requirement: string }
     return {
       code: 200,
       data: `// AI 为需求 "${requirement}" 生成的代码\ntracker.log('click', { action: 'signup' });`,
@@ -316,7 +317,7 @@ const aiGenerateCodeMock: MockMethod = {
 const aiAnalysisMock: MockMethod = {
   url: '/api/ai/analysis',
   method: 'get',
-  response: (req: any) => {
+  response: (req: MockOptions) => {
     const { analysisType } = req.query
 
     // 根据分析类型返回不同的模拟数据
@@ -385,12 +386,93 @@ const aiAnalysisMock: MockMethod = {
 const aiSendQueryMock: MockMethod = {
   url: '/api/ai/send-query',
   method: 'post',
-  response: (req: any) => {
-    const { query } = req.body
+  response: (req: MockOptions) => {
+    const { query } = req.body as { query: string }
     return {
       code: 200,
       data: {
         response: `AI 已分析您的查询："${query}"。根据模拟数据，最近 7 天的埋点数据趋势整体呈现上升趋势，日均增长率约为 10%。未检测到明显异常情况。建议继续保持当前的埋点策略，并考虑增加性能监控指标。`,
+      },
+    }
+  },
+}
+
+// AI 分析所有事件接口
+const aiAnalyzeAllMock: MockMethod = {
+  url: '/api/ai/analyzeAll',
+  method: 'get',
+  response: () => {
+    return {
+      code: 200,
+      data: {
+        analysis: '基于当前数据分析，发现以下问题：',
+        recommendations: ['建议优化错误处理机制', '增加监控覆盖范围'],
+        confidence: 0.85,
+        issues: [
+          {
+            id: '1',
+            level: 'error',
+            title: 'API 响应时间过长',
+            description: '部分接口响应时间超过 2s',
+            suggestion: '建议优化数据库查询',
+            affected_scope: '全局',
+            score_impact: 15,
+          },
+          {
+            id: '2',
+            level: 'warning',
+            title: '埋点数据丢失',
+            description: '检测到部分埋点数据未上报',
+            suggestion: '检查 SDK 初始化配置',
+            affected_scope: 'iOS 客户端',
+            score_impact: 10,
+          },
+        ],
+      },
+    }
+  },
+}
+
+// AI 分析错误事件接口
+const aiAnalyzeErrorMock: MockMethod = {
+  url: '/api/ai/analyzeError',
+  method: 'get',
+  response: () => {
+    return {
+      code: 200,
+      data: {
+        analysis: '错误分析结果：',
+        recommendations: ['修复空指针异常', '增加参数校验'],
+        confidence: 0.92,
+        issues: [
+          {
+            id: '1',
+            level: 'error',
+            title: 'generate_click 事件参数缺失',
+            description: '检测到 5% 的生成点击事件缺失 model_type 参数。',
+            suggestion: '请检查 TrackSDK 的调用代码，确保 payload 中包含 model_type 字段。',
+            affected_scope: 'A/B 测试实验组 B',
+            score_impact: 15,
+          },
+          {
+            id: '2',
+            level: 'warning',
+            title: 'work_show 曝光未去重',
+            description: '同一作品 ID 在短时间内触发了多次曝光。',
+            suggestion: '建议引入防抖 (Debounce) 机制，或使用 SDK 的 once: true 选项。',
+            affected_scope: '作品详情页',
+            score_impact: 5,
+          },
+          {
+            id: '3',
+            level: 'info',
+            title: 'Prompt 长度分布异常',
+            description: '检测到超长 Prompt (Length > 1000) 占比上升。',
+            suggestion: '业务提示，暂无需代码修复。',
+            affected_scope: '生成模块',
+            score_impact: 0,
+          },
+        ],
       },
     }
   },
@@ -414,6 +496,8 @@ const mockModules = [
   aiGenerateCodeMock,
   aiAnalysisMock,
   aiSendQueryMock,
+  aiAnalyzeAllMock,
+  aiAnalyzeErrorMock,
 ]
 
 // 导出生产环境使用的函数

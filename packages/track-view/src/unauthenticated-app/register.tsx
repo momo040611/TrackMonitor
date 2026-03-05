@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
-import { useAuth } from '../context/auth-context'
-import { StyledInput, StyledButton } from './index'
+import { useAuth } from '../context/useAuth'
+import { useDebounce } from '../hooks/useDebounce'
+import { StyledInput, StyledButton } from './styled'
 
 export const RegisterScreen = ({ onError }: { onError: (error: Error) => void }) => {
   const { register, checkUsername } = useAuth()
@@ -12,25 +13,29 @@ export const RegisterScreen = ({ onError }: { onError: (error: Error) => void })
   const [usernameError, setUsernameError] = useState('')
   const [isCheckingUsername, setIsCheckingUsername] = useState(false)
 
+  // 使用 useDebounce 对用户名进行防抖
+  const debouncedUsername = useDebounce(username, 500)
+
   useEffect(() => {
-    const timer = setTimeout(async () => {
-      if (username) {
+    const checkUsernameAsync = async () => {
+      if (debouncedUsername) {
         setIsCheckingUsername(true)
         try {
-          await checkUsername(username)
+          await checkUsername(debouncedUsername)
           setUsernameError('')
-        } catch (error: any) {
-          setUsernameError(error.message || '用户名已存在')
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : '用户名已存在'
+          setUsernameError(errorMessage)
         } finally {
           setIsCheckingUsername(false)
         }
       } else {
         setUsernameError('')
       }
-    }, 500)
+    }
 
-    return () => clearTimeout(timer)
-  }, [username, checkUsername])
+    checkUsernameAsync()
+  }, [debouncedUsername, checkUsername])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -57,24 +62,24 @@ export const RegisterScreen = ({ onError }: { onError: (error: Error) => void })
     try {
       setIsLoading(true)
       await register({ username, password, email })
-    } catch (e: any) {
-      console.log('注册错误：', e)
+    } catch (e) {
       // 处理后端返回的错误
-      if (e.message && e.message.includes('Duplicate entry')) {
+      const errorMessage = e instanceof Error ? e.message : ''
+      if (errorMessage.includes('Duplicate entry')) {
         // 尝试解析错误信息，判断是哪个字段重复
-        if (e.message.includes('username')) {
+        if (errorMessage.includes('username')) {
           onError(new Error('用户名已存在'))
-        } else if (e.message.includes('email')) {
+        } else if (errorMessage.includes('email')) {
           onError(new Error('邮箱已存在'))
         } else {
           onError(new Error('注册失败，请稍后重试'))
         }
-      } else if (e.message && e.message.includes('Username is already taken')) {
+      } else if (errorMessage.includes('Username is already taken')) {
         onError(new Error('用户名已存在'))
-      } else if (e.message) {
-        onError(new Error(e.message))
+      } else if (errorMessage) {
+        onError(new Error(errorMessage))
       } else {
-        onError(e as Error)
+        onError(e instanceof Error ? e : new Error('注册失败'))
       }
     } finally {
       setIsLoading(false)

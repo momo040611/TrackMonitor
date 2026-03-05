@@ -132,14 +132,11 @@ export const usePerformanceData = () => {
     try {
       const result = await api.getPerformanceData()
       if (result && typeof result === 'object') {
-        let data: any = result
-        if ('data' in result) data = result.data
-        else if (
-          'status' in (result as any) &&
-          (result as any).status === 0 &&
-          'data' in (result as any)
-        ) {
-          data = (result as any).data
+        let data: PerformanceData | undefined
+        // 处理 ApiResponse<PerformanceData> 结构
+        const apiResponse = result as { data?: { data?: PerformanceData; code?: number } }
+        if (apiResponse.data?.data) {
+          data = apiResponse.data.data
         }
 
         setPerformanceData({
@@ -162,12 +159,12 @@ export const usePerformanceData = () => {
       } else {
         setPerformanceData(DEFAULT_DATA)
       }
-    } catch (error) {
+    } catch {
       setPerformanceData(DEFAULT_DATA)
     } finally {
       setIsLoading(false)
     }
-  }, [timeRange])
+  }, [])
 
   useEffect(() => {
     fetchPerformanceData()

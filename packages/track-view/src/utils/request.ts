@@ -1,9 +1,8 @@
 import axios from 'axios'
-import { useCallback } from 'react'
 
 const request = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
-  timeout: 5000,
+  timeout: 30000, // 将超时时间从 5 秒增加到 30 秒
   // 明确指定 200-299 之间的状态码为成功响应
   validateStatus: (status) => {
     return status >= 200 && status < 300
@@ -16,7 +15,8 @@ request.interceptors.request.use(
     // 从本地存储获取 token
     const token = localStorage.getItem('__auth_provider_token__')
     // 如果有 token，添加到请求头
-    if (token && typeof token === 'string' && /^[\x00-\x7F]*$/.test(token)) {
+    // 使用更安全的 ASCII 字符检查，避免控制字符
+    if (token && typeof token === 'string' && /^[\x20-\x7E]*$/.test(token)) {
       config.headers.Authorization = `Bearer ${token}`
     }
     return config
@@ -61,26 +61,5 @@ request.interceptors.response.use(
     return Promise.reject({ message: '请求失败，请稍后重试' })
   }
 )
-
-// 自定义 hook，用于发起 HTTP 请求
-export const useHttp = () => {
-  return useCallback((endpoint: string, config: Record<string, unknown> = {}) => {
-    // 构建请求配置
-    const axiosConfig: Record<string, unknown> = {
-      url: endpoint,
-      ...config,
-    }
-
-    // 如果提供了token，使用它覆盖默认的token
-    if (config.token) {
-      axiosConfig.headers = {
-        ...(axiosConfig.headers as Record<string, string>),
-        Authorization: `Bearer ${config.token}`,
-      }
-    }
-
-    return request(axiosConfig as any)
-  }, [])
-}
 
 export default request

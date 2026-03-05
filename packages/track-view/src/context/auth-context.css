@@ -1,0 +1,53 @@
+/* AuthContext 样式 */
+
+/* 加载状态容器 */
+.auth-loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background-color: #fff;
+}
+
+/* 加载内容 */
+.auth-loading-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* 加载动画 */
+.auth-loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #3385ff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+/* 加载文字 */
+.auth-loading-text {
+  font-size: 16px;
+  color: #333;
+}
+
+/* 错误状态容器 */
+.auth-error-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  color: red;
+}
+
+/* 旋转动画 */
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}

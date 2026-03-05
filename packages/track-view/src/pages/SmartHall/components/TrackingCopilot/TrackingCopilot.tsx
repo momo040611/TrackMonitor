@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import { Card, Input, Button, Typography, Space, Tag, message, Empty, Spin } from 'antd'
 import { CopyOutlined, BulbOutlined, ThunderboltOutlined, CodeOutlined } from '@ant-design/icons'
 import { useAiAssistant } from '../../hooks/useAiAssistant'
@@ -14,12 +14,22 @@ import './TrackingCopilot.less'
 const { TextArea } = Input
 const { Text } = Typography
 
+// SyntaxHighlighter 样式配置
+const CODE_HIGHLIGHTER_STYLE = {
+  margin: 0,
+  padding: '20px',
+  borderRadius: '8px',
+  fontSize: '14px',
+  backgroundColor: 'transparent',
+  minHeight: '100%',
+} as const
+
 export const TrackingCopilot: React.FC = () => {
   const { copilot } = useAiAssistant()
   const [input, setInput] = useState('')
   const typedCode = useTypewriter(copilot.result, 20)
 
-  const suggestions = ['监控购买按钮点击', '分析首页停留时间', '追踪异常白屏']
+  const suggestions = useMemo(() => ['监控购买按钮点击', '分析首页停留时间', '追踪异常白屏'], [])
 
   const copyToClipboard = () => {
     if (copilot.result) {
@@ -107,14 +117,7 @@ export const TrackingCopilot: React.FC = () => {
             <SyntaxHighlighter
               language="typescript"
               style={vscDarkPlus}
-              customStyle={{
-                margin: 0,
-                padding: '20px',
-                borderRadius: '8px',
-                fontSize: '14px',
-                backgroundColor: 'transparent',
-                minHeight: '100%',
-              }}
+              customStyle={CODE_HIGHLIGHTER_STYLE}
               showLineNumbers={true}
             >
               {typedCode}

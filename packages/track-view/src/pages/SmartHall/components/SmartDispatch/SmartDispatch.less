@@ -26,6 +26,20 @@
         display: flex;
         flex-direction: column;
 
+        .instruction-text {
+            color: #666;
+            margin-bottom: 12px;
+        }
+
+        .task-textarea {
+            margin-bottom: 20px;
+            resize: none;
+        }
+
+        .dispatch-btn {
+            margin-top: auto;
+        }
+
         .quick-tags {
             margin-bottom: 24px;
 
@@ -73,6 +87,14 @@
 
                 .info-text {
                     flex: 1;
+
+                    .dev-name {
+                        margin: 0;
+                    }
+
+                    .dev-role {
+                        color: #666;
+                    }
                 }
             }
 
@@ -99,6 +121,29 @@
             align-items: center;
             gap: 8px;
             font-size: 12px;
+            margin-top: 8px;
+
+            .load-progress {
+                width: 100px;
+            }
+        }
+
+        .dev-info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .match-score-high {
+            color: #1890ff;
+        }
+
+        .match-score-low {
+            color: #999;
+        }
+
+        .empty-result {
+            margin-top: 100px;
         }
     }
 }

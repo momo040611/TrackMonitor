@@ -1,14 +1,23 @@
 import React, { useState } from 'react'
-import { Modal, Form, Input, Select, Radio, Button, message } from 'antd'
+import { Modal, Form, Input, Select, Radio, Button } from 'antd'
 
 const { Option } = Select
 const { TextArea } = Input
+
+// 表单值类型
+interface TrackingFormValues {
+  name: string
+  page: string
+  selector?: string
+  trigger?: string
+  description?: string
+}
 
 // 定义组件接收的 Props
 interface AddTrackingModalProps {
   open: boolean
   onCancel: () => void
-  onSuccess: (values: any, trackingType: string) => void
+  onSuccess: (values: TrackingFormValues, trackingType: string) => void
 }
 
 const AddTrackingModal: React.FC<AddTrackingModalProps> = ({ open, onCancel, onSuccess }) => {
@@ -23,8 +32,8 @@ const AddTrackingModal: React.FC<AddTrackingModalProps> = ({ open, onCancel, onS
         onSuccess(values, selectedTrackingType)
         form.resetFields() // 提交后清空当前表单
       })
-      .catch((info) => {
-        console.log('Validate Failed:', info)
+      .catch(() => {
+        // 表单验证失败，不执行后续操作
       })
   }
 

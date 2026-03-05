@@ -1,36 +1,16 @@
 import React, { useMemo } from 'react'
-import {
-  Card,
-  Table,
-  Tag,
-  Button,
-  Progress,
-  Statistic,
-  Row,
-  Col,
-  Drawer,
-  Typography,
-  message,
-  Space,
-} from 'antd'
-import {
-  BugOutlined,
-  CheckCircleOutlined,
-  ReloadOutlined,
-  RobotOutlined,
-  FileTextOutlined,
-  ExportOutlined,
-} from '@ant-design/icons'
-import { useAnomalyDiagnosis, type DiagnosisItem } from './useAnomalyDiagnosis'
+import { Card, Table, Tag, Button, Progress, Statistic, Row, Col, Typography, message } from 'antd'
+import { BugOutlined, CheckCircleOutlined, ReloadOutlined, RobotOutlined } from '@ant-design/icons'
+import { useAnomalyDiagnosis } from './useAnomalyDiagnosis'
+import { useSmartHall } from '../../hooks/useSmartHall'
+import type { DiagnosisItem } from '../../types'
+import IssueDetailDrawer from './IssueDetailDrawer'
 import './AnomalyDiagnosis.less'
 
-const { Title, Paragraph, Text } = Typography
+const { Text } = Typography
 
-interface Props {
-  onDispatch?: (content: string) => void
-}
-
-export const AnomalyDiagnosis: React.FC<Props> = ({ onDispatch }) => {
+export const AnomalyDiagnosis: React.FC = () => {
+  const { goToDispatch } = useSmartHall()
   const {
     analyzing,
     healthScore,
@@ -48,7 +28,7 @@ export const AnomalyDiagnosis: React.FC<Props> = ({ onDispatch }) => {
       {
         title: '异常信息',
         key: 'info',
-        render: (_: any, item: DiagnosisItem) => (
+        render: (_: unknown, item: DiagnosisItem) => (
           <div>
             <div className="issue-title">
               <Tag
@@ -69,7 +49,7 @@ export const AnomalyDiagnosis: React.FC<Props> = ({ onDispatch }) => {
       {
         title: '操作',
         key: 'action',
-        render: (_: any, item: DiagnosisItem) => (
+        render: (_: unknown, item: DiagnosisItem) => (
           <Button type="link" size="small" onClick={() => showDetails(item)}>
             查看详情
           </Button>
@@ -79,12 +59,12 @@ export const AnomalyDiagnosis: React.FC<Props> = ({ onDispatch }) => {
     [showDetails]
   )
 
-  // 业务派发逻辑
+  // 业务派发逻辑 - 使用 Context
   const handleToDispatch = () => {
-    if (!currentIssue || !onDispatch) return
+    if (!currentIssue) return
     const taskContext =
       `【异常转工单】${currentIssue.title}\n-------------------------\n[级别] ${currentIssue.level.toUpperCase()}\n[影响范围] ${currentIssue.affected_scope || '未知'}\n[异常描述] ${currentIssue.description}\n[AI 建议] ${currentIssue.suggestion}`.trim()
-    onDispatch(taskContext)
+    goToDispatch(taskContext)
     message.loading('正在同步上下文至分派台...', 0.5)
   }
 
@@ -102,7 +82,7 @@ export const AnomalyDiagnosis: React.FC<Props> = ({ onDispatch }) => {
             ghost
             icon={<ReloadOutlined />}
             loading={analyzing}
-            onClick={startDiagnosis}
+            onClick={() => startDiagnosis(true)}
           >
             重新诊断
           </Button>
@@ -167,66 +147,8 @@ export const AnomalyDiagnosis: React.FC<Props> = ({ onDispatch }) => {
         issue={currentIssue}
         onClose={closeDrawer}
         onDispatch={handleToDispatch}
-        canDispatch={!!onDispatch}
+        canDispatch={true}
       />
     </div>
   )
 }
-
-const IssueDetailDrawer = ({ visible, issue, onClose, onDispatch, canDispatch }: any) => (
-  <Drawer
-    title={
-      <span>
-        <FileTextOutlined /> 异常详情
-      </span>
-    }
-    placement="right"
-    size={480}
-    onClose={onClose}
-    open={visible}
-  >
-    {issue && (
-      <div className="diagnosis-drawer-content">
-        <div>
-          <Title level={5}>异常描述</Title>
-          <Paragraph>{issue.description}</Paragraph>
-        </div>
-        {issue.affected_scope && (
-          <div>
-            <Title level={5}>影响范围</Title>
-            <Tag color="purple" className="scope-tag">
-              {issue.affected_scope}
-            </Tag>
-          </div>
-        )}
-        <Card
-          type="inner"
-          title={
-            <Space>
-              <RobotOutlined /> AI 修复建议
-            </Space>
-          }
-          className="suggestion-card"
-          actions={[
-            <Button
-              key="dispatch"
-              type="primary"
-              size="small"
-              ghost
-              icon={<ExportOutlined />}
-              onClick={onDispatch}
-              disabled={!canDispatch}
-            >
-              转人工分派
-            </Button>,
-          ]}
-        >
-          <Paragraph style={{ marginBottom: 0 }}>{issue.suggestion}</Paragraph>
-        </Card>
-        <div className="meta-info">
-          异常 ID: {issue.id} | 扣分权重: {issue.score_impact}
-        </div>
-      </div>
-    )}
-  </Drawer>
-)

@@ -5,6 +5,13 @@ import { HomeOutlined } from '@ant-design/icons'
 
 const { Title } = Typography
 
+// 路由错误类型
+interface RouteError {
+  status?: number
+  message?: string
+  statusText?: string
+}
+
 interface ErrorPageProps {
   status?: number
   message?: string
@@ -12,10 +19,10 @@ interface ErrorPageProps {
 
 const ErrorPage: React.FC<ErrorPageProps> = ({ status, message }) => {
   const navigate = useNavigate()
-  const error = useRouteError() as any
+  const error = useRouteError() as RouteError | undefined
 
   const errorStatus = status || error?.status || 500
-  const errorMessage = message || error?.message || '服务器内部错误'
+  const errorMessage = message || error?.message || error?.statusText || '服务器内部错误'
 
   const handleGoHome = () => {
     navigate('/')

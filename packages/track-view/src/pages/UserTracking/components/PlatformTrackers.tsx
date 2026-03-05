@@ -1,9 +1,15 @@
 import React, { useEffect } from 'react'
 
+// 定义追踪器类型
+interface Tracker {
+  track: (event: string, data: Record<string, unknown>) => void
+  use: (plugin: unknown) => void
+}
+
 export interface TrackerProps {
   isTracking: boolean
   addData: (type: string, platform: string, details: string) => void
-  trackerRef: React.MutableRefObject<any>
+  trackerRef: React.MutableRefObject<Tracker | null>
 }
 
 // Web 网页端追踪组件

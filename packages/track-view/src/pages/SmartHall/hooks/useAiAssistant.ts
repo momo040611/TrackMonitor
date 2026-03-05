@@ -1,5 +1,5 @@
 import { useAsync } from '../../../utils/use-async'
-import { AiService } from '../services/useAiAssistant'
+import { AiService } from '../services/aiService'
 
 export const useAiAssistant = () => {
   const {
@@ -8,12 +8,6 @@ export const useAiAssistant = () => {
     isLoading: isCodeLoading,
     error: codeError,
   } = useAsync<string>()
-
-  const { run, data, isLoading, error } = useAsync<string>()
-
-  const handleGenerate = (input: string) => {
-    run(AiService.generateCode(input))
-  }
 
   const generateCode = (requirement: string) => {
     runCodeGen(AiService.generateCode(requirement))

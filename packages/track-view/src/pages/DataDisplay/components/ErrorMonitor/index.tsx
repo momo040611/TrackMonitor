@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Card, Tabs, Table, Button, Tag, Space, Spin, Badge } from 'antd'
-import type { ColumnsType } from 'antd/es/table'
+import { Card, Tabs, Spin, Badge } from 'antd'
 import JsError from './JsError'
 import PromiseError from './PromiseError'
 import StaticResourceError from './StaticResourceError'
@@ -44,7 +43,7 @@ const ErrorMonitor: React.FC = () => {
       } else {
         setErrorData([])
       }
-    } catch (error) {
+    } catch {
       setErrorData([])
     } finally {
       setIsLoading(false)
@@ -99,9 +98,11 @@ const ErrorMonitor: React.FC = () => {
   ]
 
   return (
-    <Card title="错误监控" variant="outlined" style={{ background: '#fff' }}>
-      <Tabs activeKey={activeTabKey} onChange={setActiveTabKey} items={tabs} />
-    </Card>
+    <Spin spinning={isLoading} tip="加载中...">
+      <Card title="错误监控" variant="outlined" style={{ background: '#fff' }}>
+        <Tabs activeKey={activeTabKey} onChange={setActiveTabKey} items={tabs} />
+      </Card>
+    </Spin>
   )
 }
 

@@ -130,7 +130,7 @@ const TrackingConfig: React.FC = () => {
         editForm.setFieldsValue(eventData.data)
         message.info(`正在编辑: ${record.name}`)
       }
-    } catch (error) {
+    } catch {
       // 本地 Mock 测试时直接用表格数据填充
       editForm.setFieldsValue({ name: record.name, trigger: record.trigger })
       message.info(`正在编辑: ${record.name}`)
@@ -167,7 +167,7 @@ const TrackingConfig: React.FC = () => {
       {
         title: '操作',
         key: 'action',
-        render: (_: any, record: TrackingDataItem) => (
+        render: (_: unknown, record: TrackingDataItem) => (
           <Space size="small">
             <Button
               type="text"
@@ -246,6 +246,7 @@ const TrackingConfig: React.FC = () => {
         ),
       },
     ],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [updateTrackingStatus, handleDelete, editForm]
   )
 

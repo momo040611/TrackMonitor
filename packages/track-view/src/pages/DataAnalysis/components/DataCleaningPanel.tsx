@@ -42,7 +42,7 @@ const DataCleaningPanel: React.FC<DataCleaningPanelProps> = ({ onCleanedChange }
           }
         }
       }
-    } catch (error) {
+    } catch {
       // 静默处理错误，不在控制台显示
       // 这样即使后端服务不可用，也不会在控制台出现错误信息
     }
@@ -176,7 +176,7 @@ const DataCleaningPanel: React.FC<DataCleaningPanelProps> = ({ onCleanedChange }
             children: state.result ? (
               <Table
                 size="small"
-                rowKey="id"
+                rowKey={(record, index) => `${record.id}-${index}`}
                 dataSource={state.result.invalid}
                 columns={rawColumns}
                 pagination={{ pageSize: 5 }}
