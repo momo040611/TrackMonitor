@@ -25,28 +25,33 @@ export class SenderPlugin implements TrackerPlugin {
   constructor(options: SenderOptions) {
     this.options = {
       batchLimit: 10,
-      timeLimit: 5000,
+      timeLimit: 5000, // 默认 5 秒合并一次
       ...options,
     }
   }
 
   setup(context: CoreContext) {
-    // 初始化时，先看看有没有上次没发出去的“烂账”
+    // 初始化时，恢复离线数据
     this.retryFromStorage()
 
-    //  监听页面关闭
-    const handleUnload = () => this.flush()
+    // 监听页面关闭（卸载时强制上报）
+    const handleUnload = () => this.flush(true) // true 表示这是卸载阶段
     window.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'hidden') handleUnload()
     })
-    // 兼容部分旧浏览器
     window.addEventListener('pagehide', handleUnload)
+
+    // 监听网络恢复，自动重发
+    window.addEventListener('online', () => {
+      console.log('[SDK] 网络恢复，准备重发离线数据...')
+      this.retryFromStorage()
+    })
   }
 
   onEvent(event: TrackerEvent, context: CoreContext) {
     const eventWithContext = { ...event, ...context }
 
-    // 错误事件立即发送
+    // 错误事件优先级最高，不进合并队列，立刻发送
     if (event.type.startsWith('error_')) {
       this.sendData([eventWithContext])
     } else {
@@ -56,34 +61,54 @@ export class SenderPlugin implements TrackerPlugin {
 
   private enqueue(event: TrackerEvent) {
     this.queue.push(event)
+    // 达到阈值，触发发送
     if (this.queue.length >= this.options.batchLimit) {
       this.flush()
     } else {
+      // 启动定时器兜底
       if (!this.timer) {
         this.timer = setTimeout(() => this.flush(), this.options.timeLimit)
       }
     }
   }
 
-  private flush() {
+  /**
+   * 刷新队列
+   * @param isUnload 是否为页面卸载阶段（卸载阶段必须同步执行，不能用 requestIdleCallback）
+   */
+  private flush(isUnload = false) {
     if (this.queue.length === 0) return
+
     const dataToSend = [...this.queue]
-    this.queue = []
+    this.queue = [] // 迅速清空原队列，不阻塞后续数据接入
+
     if (this.timer) {
       clearTimeout(this.timer)
       this.timer = null
     }
-    this.sendData(dataToSend)
+
+    if (isUnload) {
+      // 卸载阶段：直接同步执行，确保不丢失
+      this.sendData(dataToSend)
+    } else {
+      // 普通阶段：利用浏览器空闲时间执行打包发送，绝不抢占主线程渲染帧
+      const runOnIdle = window.requestIdleCallback || ((cb) => setTimeout(cb, 0))
+      runOnIdle(() => this.sendData(dataToSend))
+    }
   }
 
   private sendData(events: TrackerEvent[]) {
+    // 网络状态嗅探：如果明确断网，直接存本地，省去无用的 fetch 开销
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+      this.saveToStorage(events)
+      return
+    }
+
     const dataStr = JSON.stringify(events)
 
-    // 优先尝试 sendBeacon
+    // 优先尝试 sendBeacon (专为页面卸载设计的非阻塞请求)
     if (navigator.sendBeacon) {
-      // 注意：sendBeacon 无法判断 HTTP 状态码（比如 500 错误它也会认为发送成功）
-      // 所以 sendBeacon 主要依靠浏览器的可靠性。
-      // 如果数据量过大导致 sendBeacon 返回 false，则降级。
+      // 注意：sendBeacon 有 64KB 大小限制，如果超限可能会返回 false
       const result = navigator.sendBeacon(
         this.options.url,
         new Blob([dataStr], { type: 'application/json' })
@@ -91,66 +116,53 @@ export class SenderPlugin implements TrackerPlugin {
       if (result) return
     }
 
-    // 降级使用 fetch
+    // 降级使用 fetch (keepalive 保证页面跳转时请求不断)
     fetch(this.options.url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: dataStr,
       keepalive: true,
     }).catch(() => {
-      // 发送失败（断网或服务器挂了），启动兜底策略
+      // 发送失败（服务器挂了或网络突然抖动），兜底保存
       this.saveToStorage(events)
     })
   }
 
-  // ---  核心新增：离线存储逻辑 ---
-
   private saveToStorage(events: TrackerEvent[]) {
     try {
-      // 1. 读取已有缓存
       const raw = localStorage.getItem(this.STORAGE_KEY)
       let failedRequests: FailedRequest[] = raw ? JSON.parse(raw) : []
 
-      // 2. 追加新失败的数据
-      failedRequests.push({
-        timestamp: Date.now(),
-        events: events,
-      })
+      failedRequests.push({ timestamp: Date.now(), events: events })
 
-      // 3. 限制缓存大小（防止把 LocalStorage 撑爆）
-      // 只保留最近 50 条请求
-      if (failedRequests.length > 50) {
-        failedRequests = failedRequests.slice(-50)
-      }
+      // 限制缓存大小，防止把用户的 LocalStorage 撑爆 (最大 50 批次)
+      if (failedRequests.length > 50) failedRequests = failedRequests.slice(-50)
 
       localStorage.setItem(this.STORAGE_KEY, JSON.stringify(failedRequests))
-      console.warn(`[SDK] 网络异常，${events.length} 条数据已保存到本地`)
+      console.warn(`[SDK] 网络异常，已将 ${events.length} 条数据保存到离线队列`)
     } catch (e) {
-      console.error('[SDK] 本地存储失败', e)
+      console.error('[SDK] 离线存储写入失败', e)
     }
   }
 
   private retryFromStorage() {
-    const raw = localStorage.getItem(this.STORAGE_KEY)
-    if (!raw) return
-
     try {
+      const raw = localStorage.getItem(this.STORAGE_KEY)
+      if (!raw) return
+
       const failedRequests: FailedRequest[] = JSON.parse(raw)
       if (failedRequests.length === 0) return
 
-      console.log(`[SDK] 发现 ${failedRequests.length} 条离线数据，正在重试...`)
-
-      // 简单粗暴策略：取出所有数据，合并成一个大数组尝试重发
-      // (也可以分批重发，这里为了演示逻辑简化处理)
+      // 把所有离线批次拍平，合并成一个大数组重发
       const allEvents = failedRequests.flatMap((req) => req.events)
 
-      // 清空本地存储，避免死循环（如果这次又失败，会再次被 saveToStorage 捕获）
+      // 先清空，避免因为本身 payload 导致无限失败死循环
       localStorage.removeItem(this.STORAGE_KEY)
 
-      // 重新走发送流程
+      // 重新发车
       this.sendData(allEvents)
     } catch (e) {
-      console.error('[SDK] 重试离线数据失败', e)
+      console.error('[SDK] 恢复离线数据失败', e)
     }
   }
 }
